@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiding in Plain Sight: On-the-Fly Evasion Methodologies, Iterative Weaponization, and Bypassing Modern Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ==========================================================================
+   Theme Variables & Foundations
+   Palette:
+   Normal: { bg = hsl(210, 90%, 10%) [#021930], fg = hsl(208, 90%, 75%) [#85c3f8] }
+   Accent: hsl(190, 95%, 65%) [#51e9fb]
+   Muted/Subtext: hsl(208, 45%, 60%) [#6b96bd]
+   Deep Surface / Code: hsl(212, 85%, 7%) [#021122]
+   Borders: hsl(210, 60%, 20%) [#14375b]
+   ========================================================================== */
+
+:root {
+    --bg-main: hsl(210, 90%, 10%);
+    --bg-surface: hsl(210, 80%, 13%);
+    --bg-surface-elevated: hsl(210, 75%, 16%);
+    --bg-code: hsl(212, 85%, 7%);
+    
+    --fg-main: hsl(208, 90%, 75%);
+    --fg-bright: hsl(208, 100%, 90%);
+    --fg-muted: hsl(208, 45%, 60%);
+    --fg-dim: hsl(210, 30%, 45%);
+    
+    --accent-cyan: hsl(190, 95%, 65%);
+    --accent-blue: hsl(215, 95%, 68%);
+    --accent-amber: hsl(38, 95%, 60%);
+    --accent-green: hsl(150, 70%, 55%);
+    
+    --border-subtle: hsl(210, 60%, 20%);
+    --border-accent: hsl(190, 70%, 35%);
+    
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'Fira Code', 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, Courier, monospace;
+}
+
+@page {
+    size: A4;
+    margin: 20mm 16mm 20mm 16mm;
+    background-color: hsl(210, 90%, 10%);
+    @top-left {
+        content: "MfYRE & MfYREpro Architecture & Security Engineering";
+        font-family: 'Inter', sans-serif;
+        font-size: 7pt;
+        font-weight: 600;
+        color: hsl(208, 45%, 60%);
+        border-bottom: 0.5pt solid hsl(210, 60%, 20%);
+        padding-bottom: 4px;
+    }
+    @top-right {
+        content: "Special Technical Report &bull; Sept 2026";
+        font-family: 'Inter', sans-serif;
+        font-size: 7pt;
+        color: hsl(210, 30%, 45%);
+        border-bottom: 0.5pt solid hsl(210, 60%, 20%);
+        padding-bottom: 4px;
+    }
+    @bottom-left {
+        content: "DTRHnet / MfYRE Project &bull; Security &amp; Automation Research";
+        font-family: 'Inter', sans-serif;
+        font-size: 7pt;
+        color: hsl(210, 30%, 45%);
+        border-top: 0.5pt solid hsl(210, 60%, 20%);
+        padding-top: 4px;
+    }
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: 'Inter', sans-serif;
+        font-size: 7pt;
+        font-weight: 700;
+        color: hsl(190, 95%, 65%);
+        border-top: 0.5pt solid hsl(210, 60%, 20%);
+        padding-top: 4px;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html, body {
+    background-color: var(--bg-main);
+    color: var(--fg-main);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.7;
+    margin: 0;
+    padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* 10% side padding / centered readable container */
+.page-wrapper {
+    padding: 40px 10%;
+    margin: 0 auto;
+    max-width: 1400px;
+}
+
+@media (max-width: 900px) {
+    .page-wrapper {
+        padding: 24px 5%;
+    }
+}
+
+/* Article Header */
+.article-header {
+    text-align: center;
+    margin-bottom: 36px;
+    padding-bottom: 28px;
+    border-bottom: 1.5px solid var(--border-subtle);
+}
+
+.badge-cluster {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.badge-primary { background: rgba(81, 233, 251, 0.12); color: var(--accent-cyan); border: 1px solid rgba(81, 233, 251, 0.3); }
+.badge-security { background: rgba(245, 158, 11, 0.12); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); }
+.badge-version { background: rgba(34, 197, 94, 0.12); color: var(--accent-green); border: 1px solid rgba(34, 197, 94, 0.3); }
+
+h1.article-title {
+    font-size: 2.2rem;
+    font-weight: 850;
+    line-height: 1.25;
+    color: var(--fg-bright);
+    letter-spacing: -0.025em;
+    margin: 0 0 14px 0;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.article-subtitle {
+    font-size: 1.15rem;
+    font-weight: 450;
+    line-height: 1.5;
+    color: var(--accent-cyan);
+    margin: 0 auto 20px auto;
+    max-width: 900px;
+}
+
+.article-meta {
+    font-size: 0.88rem;
+    color: var(--fg-muted);
+    margin-bottom: 22px;
+    line-height: 1.8;
+}
+
+.article-meta strong {
+    color: var(--fg-bright);
+}
+
+/* Centered & Bordered ASCII Art Title Box */
+.title-ascii-container {
+    text-align: center;
+    margin: 28px auto 20px auto;
+    page-break-inside: avoid;
+}
+
+.title-ascii-box {
+    display: inline-block;
+    border: 2px solid var(--border-accent);
+    background-color: var(--bg-code);
+    border-radius: 10px;
+    padding: 22px 30px 16px 30px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 15px rgba(81, 233, 251, 0.15);
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.title-ascii-img {
+    max-width: 520px;
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto 12px auto;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+.title-ascii-caption {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--accent-cyan);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--fg-bright);
+    font-weight: 750;
+    letter-spacing: -0.015em;
+}
+
+h1 {
+    font-size: 1.9rem;
+    border-bottom: 2px solid var(--border-accent);
+    padding-bottom: 8px;
+    margin-top: 48px;
+    margin-bottom: 20px;
+}
+
+h2 {
+    font-size: 1.45rem;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 6px;
+    margin-top: 40px;
+    margin-bottom: 16px;
+    color: var(--accent-cyan);
+}
+
+h3 {
+    font-size: 1.2rem;
+    margin-top: 30px;
+    margin-bottom: 12px;
+    color: var(--fg-bright);
+}
+
+h4 {
+    font-size: 1.05rem;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    color: var(--accent-blue);
+}
+
+p {
+    margin-top: 0;
+    margin-bottom: 18px;
+    text-align: justify;
+    text-justify: inter-word;
+}
+
+a {
+    color: var(--accent-cyan);
+    text-decoration: none;
+    border-bottom: 1px dotted var(--accent-cyan);
+    transition: all 0.2s ease;
+}
+
+a:hover {
+    color: var(--fg-bright);
+    border-bottom-style: solid;
+}
+
+strong, b {
+    color: var(--fg-bright);
+    font-weight: 650;
+}
+
+em, i {
+    color: var(--accent-cyan);
+    font-style: italic;
+}
+
+ul, ol {
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-left: 28px;
+}
+
+li {
+    margin-bottom: 8px;
+}
+
+hr {
+    border: none;
+    border-top: 1.5px solid var(--border-subtle);
+    margin: 40px 0;
+}
+
+/* Callouts & Blockquotes */
+blockquote {
+    border-left: 4px solid var(--accent-cyan);
+    background-color: var(--bg-surface);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 22px;
+    margin: 24px 0;
+    font-size: 0.98rem;
+    color: var(--fg-main);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+blockquote p:last-child {
+    margin-bottom: 0;
+}
+
+blockquote strong {
+    color: var(--accent-cyan);
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 28px 0;
+    font-size: 0.88rem;
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: var(--bg-surface);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+th, td {
+    padding: 11px 16px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+th {
+    background-color: var(--bg-surface-elevated);
+    color: var(--accent-cyan);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    font-size: 0.78rem;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:nth-child(even) td {
+    background-color: rgba(2, 25, 48, 0.45);
+}
+
+tr:hover td {
+    background-color: rgba(81, 233, 251, 0.05);
+}
+
+/* Inline Code & Code Blocks */
+code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background-color: var(--bg-code);
+    color: var(--accent-cyan);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+}
+
+pre {
+    background-color: var(--bg-code) !important;
+    color: var(--fg-main);
+    padding: 18px 22px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    overflow-x: auto;
+    margin: 22px 0;
+    border: 1px solid var(--border-subtle);
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
+pre code {
+    background-color: transparent !important;
+    color: inherit;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+}
+
+/* Figures & Diagram Containers */
+.figure-container {
+    text-align: center;
+    margin: 30px auto;
+    page-break-inside: avoid;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: 10px;
+    padding: 18px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.4);
+    max-width: 950px;
+}
+
+.figure-img {
+    max-width: 98%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background-color: #0b1120;
+}
+
+.figure-caption {
+    font-size: 0.85rem;
+    color: var(--fg-muted);
+    margin-top: 12px;
+    margin-bottom: 0;
+    font-style: italic;
+    text-align: center;
+}
+
+/* Navigation & Footer */
+.site-footer {
+    margin-top: 60px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border-subtle);
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--fg-muted);
+}
+
+.site-footer a {
+    color: var(--accent-cyan);
+}
+
+/* Pygments Syntax Styling Overrides for Theme */
+.codehilite { background: var(--bg-code); border-radius: 8px; }
+.codehilite .k, .codehilite .kd, .codehilite .kn, .codehilite .kr { color: hsl(285, 80%, 75%); font-weight: bold; } /* Keyword */
+.codehilite .s, .codehilite .s1, .codehilite .s2, .codehilite .se { color: hsl(145, 65%, 65%); } /* String */
+.codehilite .nf, .codehilite .fm { color: hsl(205, 95%, 72%); font-weight: bold; } /* Function */
+.codehilite .c, .codehilite .c1, .codehilite .cm { color: hsl(208, 30%, 48%); font-style: italic; } /* Comment */
+.codehilite .nb { color: hsl(190, 95%, 65%); } /* Name.Builtin */
+.codehilite .mi, .codehilite .mf { color: hsl(35, 90%, 65%); } /* Number */
+.codehilite .o, .codehilite .ow { color: hsl(190, 85%, 60%); } /* Operator */
+
+pre { line-height: 125%; }
+td.linenos .normal { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+span.linenos { color: #D8DEE9; background-color: #242933; padding-left: 5px; padding-right: 5px; }
+td.linenos .special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+span.linenos.special { color: #242933; background-color: #D8DEE9; padding-left: 5px; padding-right: 5px; }
+.codehilite .hll { background-color: #3B4252 }
+.codehilite { background: #2E3440; color: #D8DEE9 }
+.codehilite .c { color: #616E87; font-style: italic } /* Comment */
+.codehilite .err { color: #BF616A } /* Error */
+.codehilite .esc { color: #D8DEE9 } /* Escape */
+.codehilite .g { color: #D8DEE9 } /* Generic */
+.codehilite .k { color: #81A1C1; font-weight: bold } /* Keyword */
+.codehilite .l { color: #D8DEE9 } /* Literal */
+.codehilite .n { color: #D8DEE9 } /* Name */
+.codehilite .o { color: #81A1C1; font-weight: bold } /* Operator */
+.codehilite .x { color: #D8DEE9 } /* Other */
+.codehilite .p { color: #ECEFF4 } /* Punctuation */
+.codehilite .ch { color: #616E87; font-style: italic } /* Comment.Hashbang */
+.codehilite .cm { color: #616E87; font-style: italic } /* Comment.Multiline */
+.codehilite .cp { color: #5E81AC; font-style: italic } /* Comment.Preproc */
+.codehilite .cpf { color: #616E87; font-style: italic } /* Comment.PreprocFile */
+.codehilite .c1 { color: #616E87; font-style: italic } /* Comment.Single */
+.codehilite .cs { color: #616E87; font-style: italic } /* Comment.Special */
+.codehilite .gd { color: #BF616A } /* Generic.Deleted */
+.codehilite .ge { color: #D8DEE9; font-style: italic } /* Generic.Emph */
+.codehilite .ges { color: #D8DEE9; font-weight: bold; font-style: italic } /* Generic.EmphStrong */
+.codehilite .gr { color: #BF616A } /* Generic.Error */
+.codehilite .gh { color: #88C0D0; font-weight: bold } /* Generic.Heading */
+.codehilite .gi { color: #A3BE8C } /* Generic.Inserted */
+.codehilite .go { color: #D8DEE9 } /* Generic.Output */
+.codehilite .gp { color: #616E88; font-weight: bold } /* Generic.Prompt */
+.codehilite .gs { color: #D8DEE9; font-weight: bold } /* Generic.Strong */
+.codehilite .gu { color: #88C0D0; font-weight: bold } /* Generic.Subheading */
+.codehilite .gt { color: #BF616A } /* Generic.Traceback */
+.codehilite .kc { color: #81A1C1; font-weight: bold } /* Keyword.Constant */
+.codehilite .kd { color: #81A1C1; font-weight: bold } /* Keyword.Declaration */
+.codehilite .kn { color: #81A1C1; font-weight: bold } /* Keyword.Namespace */
+.codehilite .kp { color: #81A1C1 } /* Keyword.Pseudo */
+.codehilite .kr { color: #81A1C1; font-weight: bold } /* Keyword.Reserved */
+.codehilite .kt { color: #81A1C1 } /* Keyword.Type */
+.codehilite .ld { color: #D8DEE9 } /* Literal.Date */
+.codehilite .m { color: #B48EAD } /* Literal.Number */
+.codehilite .s { color: #A3BE8C } /* Literal.String */
+.codehilite .na { color: #8FBCBB } /* Name.Attribute */
+.codehilite .nb { color: #81A1C1 } /* Name.Builtin */
+.codehilite .nc { color: #8FBCBB } /* Name.Class */
+.codehilite .no { color: #8FBCBB } /* Name.Constant */
+.codehilite .nd { color: #D08770 } /* Name.Decorator */
+.codehilite .ni { color: #D08770 } /* Name.Entity */
+.codehilite .ne { color: #BF616A } /* Name.Exception */
+.codehilite .nf { color: #88C0D0 } /* Name.Function */
+.codehilite .nl { color: #D8DEE9 } /* Name.Label */
+.codehilite .nn { color: #8FBCBB } /* Name.Namespace */
+.codehilite .nx { color: #D8DEE9 } /* Name.Other */
+.codehilite .py { color: #D8DEE9 } /* Name.Property */
+.codehilite .nt { color: #81A1C1 } /* Name.Tag */
+.codehilite .nv { color: #D8DEE9 } /* Name.Variable */
+.codehilite .ow { color: #81A1C1; font-weight: bold } /* Operator.Word */
+.codehilite .pm { color: #ECEFF4 } /* Punctuation.Marker */
+.codehilite .w { color: #D8DEE9 } /* Text.Whitespace */
+.codehilite .mb { color: #B48EAD } /* Literal.Number.Bin */
+.codehilite .mf { color: #B48EAD } /* Literal.Number.Float */
+.codehilite .mh { color: #B48EAD } /* Literal.Number.Hex */
+.codehilite .mi { color: #B48EAD } /* Literal.Number.Integer */
+.codehilite .mo { color: #B48EAD } /* Literal.Number.Oct */
+.codehilite .sa { color: #A3BE8C } /* Literal.String.Affix */
+.codehilite .sb { color: #A3BE8C } /* Literal.String.Backtick */
+.codehilite .sc { color: #A3BE8C } /* Literal.String.Char */
+.codehilite .dl { color: #A3BE8C } /* Literal.String.Delimiter */
+.codehilite .sd { color: #616E87 } /* Literal.String.Doc */
+.codehilite .s2 { color: #A3BE8C } /* Literal.String.Double */
+.codehilite .se { color: #EBCB8B } /* Literal.String.Escape */
+.codehilite .sh { color: #A3BE8C } /* Literal.String.Heredoc */
+.codehilite .si { color: #A3BE8C } /* Literal.String.Interpol */
+.codehilite .sx { color: #A3BE8C } /* Literal.String.Other */
+.codehilite .sr { color: #EBCB8B } /* Literal.String.Regex */
+.codehilite .s1 { color: #A3BE8C } /* Literal.String.Single */
+.codehilite .ss { color: #A3BE8C } /* Literal.String.Symbol */
+.codehilite .bp { color: #81A1C1 } /* Name.Builtin.Pseudo */
+.codehilite .fm { color: #88C0D0 } /* Name.Function.Magic */
+.codehilite .vc { color: #D8DEE9 } /* Name.Variable.Class */
+.codehilite .vg { color: #D8DEE9 } /* Name.Variable.Global */
+.codehilite .vi { color: #D8DEE9 } /* Name.Variable.Instance */
+.codehilite .vm { color: #D8DEE9 } /* Name.Variable.Magic */
+.codehilite .il { color: #B48EAD } /* Literal.Number.Integer.Long */
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+    <header class="article-header">
+        <div class="badge-cluster">
+            <span class="badge badge-primary">Comprehensive Master Whitepaper</span>
+            <span class="badge badge-security">Security &amp; Telemetry Deconstruction</span>
+            <span class="badge badge-version">MfYRE v1.7.0 &bull; MfYREpro &bull; Workada Monitor</span>
+        </div>
+        <h1 class="article-title">Hiding in Plain Sight: On-the-Fly Evasion Methodologies, Iterative Weaponization, and Bypassing Modern Detection</h1>
+        <div class="article-subtitle">Deconstructing the MfYRE &amp; MfYREpro Closed-Loop Architecture Alongside the Workada Runtime Instrumentation &amp; Signal-Spoofing Field Report</div>
+        <div class="article-meta">
+            <strong>Lead Systems Architect &amp; Maintainer:</strong> KBS (admin@dtrh.net) &bull; 
+            <strong>Research Organizations:</strong> DTRHnet / MfYRE Project &bull; 
+            <strong>Publication Date:</strong> September 25, 2026
+        </div>
+        
+    <div class="title-ascii-container">
+        <div class="title-ascii-box">
+            <img class="title-ascii-img" src="assets/mfyre_ascii_banner.png" alt="MfYRE Release Task Monitor ASCII Art Splash">
+            <div class="title-ascii-caption">  RELEASE/ascii.sh  </div>
+        </div>
+    </div>
+    
+    </header>
+
+    <main class="article-content">
+<h1 id="hiding-in-plain-sight-on-the-fly-evasion-methodologies-iterative-weaponization-and-bypassing-modern-detection">Hiding in Plain Sight: On-the-Fly Evasion Methodologies, Iterative Weaponization, and Bypassing Modern Detection</h1>
+<p><strong>The Definitive Dual-Study on Client-Side Telemetry Minimization, In-Process Signal Spoofing, and Autonomous Fail-Closed Workflow Orchestration</strong></p>
+<p><em>By Systems &amp; Security Architecture Engineering</em><br />
+<em>Special Technical Report &amp; Whitepaper &bull; September 25, 2026</em><br />
+<em>Contributors: KBS (admin@dtrh.net) &bull; DTRHnet Research &bull; Workada Research Monitor Group</em></p>
+<hr />
+<blockquote>
+<p><strong>Scope, Authorization, and Research Doctrine.</strong><br />
+Everything documented in this treatise was performed against software in strictly controlled research environments: isolated virtual machines (VirtualBox host-only networking on 192.168.86.0/24), synthetic evaluation accounts, ephemeral test pages, non-intrusive memory hooks, and immutable evidence chains. Neither project is intended for covert monitoring, surveillance circumvention, credential theft, or unauthorized access. Both projects share a foundational engineering ethos: <strong>an observed API call is evidence of a call, not proof of a completed operation.</strong> We document methodologies, failure modes, telemetry seams, and architectural invariants so that systems engineers, security researchers, and enterprise defenders can reason rigorously about modern detection surfaces.</p>
+</blockquote>
+<hr />
+<h2 id="executive-summary-architectural-overview">Executive Summary &amp; Architectural Overview</h2>
+<p>Modern telemetry systems—whether deployed as enterprise endpoint detection and response (EDR) platforms, in-browser fraud detection engines, anti-scraping sentinels, or user-behavior analytics (UBA) agents—rely on a coherent set of assumptions: automated or unauthorized execution inevitably manifests as observable process anomalies, memory-allocation footprints, uncharacteristic call stacks, state mutations, and non-human timing profiles. When software engineers attempt to automate human-in-the-loop workflows across monitored platforms (such as high-throughput AI data-annotation ecosystems like <strong>Multimango</strong> and <strong>Workada</strong>), conventional automation architectures predictably fail. They trip client-side DOM mutation sensors, exhaust browser memory by dragging dense binary payloads across execution contexts, trigger behavioral rate-limiting through inhuman typing velocities, or catastrophically desynchronize when asynchronous single-page applications (SPAs) mutate state underneath them.</p>
+<p>This whitepaper provides an exhaustive technical post-mortem and architectural breakdown of <strong>MfYRE</strong> (Task Exporter v1.7.0) and its autonomous desktop control supervisor, <strong>MfYREpro</strong>. Conceived initially as an observation-only Manifest V3 browser extension, MfYRE evolved into a globally distributed, asynchronous pipeline spanning isolated Windows virtual machines, Chromium Developer Protocol (CDP) sockets, pure in-memory PKZIP binary synthesis, ephemeral GitHub Actions workers, multi-provider multimodal vision LLM adapters, and a stateful Linux-side finite-state machine (FSM).</p>
+<p>Crucially, this architecture demonstrates that the most resilient method of evading defensive telemetry is not to deploy aggressive "stealth" hooks, API hooking unhooks, or heuristic obfuscators, but to radically shrink the observable footprint: <strong>decouple the capture plane from the analysis plane</strong>, enforce <strong>strict observation-only guarantees</strong> on host DOMs, store zero persistent credentials on disk, mandate <strong>fail-closed verification primitives</strong>, and treat every transition as unsafe until mathematically and contextually verified.</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/01-overview_diagram_1.png" alt="Figure 1.1: High-Level End-to-End Task Observation &amp;amp; Adjudication Pipeline" /><p class="figure-caption">Figure 1.1: High-Level End-to-End Task Observation &amp;amp; Adjudication Pipeline</p></div>
+<hr />
+<h2 id="part-i-genesis-concept-architecture">Part I — Genesis, Concept &amp; Architecture</h2>
+<h3 id="11-from-browser-side-capture-to-a-distributed-analysis-pipeline">1.1 From Browser-Side Capture to a Distributed Analysis Pipeline</h3>
+<p>MfYRE began as a specialized browser extension designed to extract human-in-the-loop (RLHF / RLAIF) data-annotation workload context directly from the client side. In these environments, annotators are tasked with evaluating paired multimodal generative model outputs (Text-to-Image, Text-to-Video, Image-to-Video, Realism HC Elo) against multifaceted, hundreds-of-words quality rubrics. The manual evaluation workflow is burdened by cognitive fatigue, subjective inconsistency, and strict timer constraints.</p>
+<p>The original engineering goal was simple: capture the prompts, author briefs, instructions, task metadata, and associated media references already present within the active browser session, package that context, and adjudicate it using frontier multimodal vision models without interrupting the user.</p>
+<p>However, the capture layer was deliberately architected with a non-negotiable security invariant: <strong>the browser must be treated purely as a transient collection edge, never an execution or analysis plane.</strong> Turning the browser into an evaluation platform introduces unacceptable security, operational, and forensic liabilities:</p>
+<ol>
+<li><strong>Host Memory &amp; Performance Bloat:</strong> Running heavy multimodal decoding, image preprocessing, or LLM inference loops inside the host browser degrades tab performance, induces UI freezing, and triggers browser crash handlers.</li>
+<li><strong>Detection &amp; Behavioral Profiling:</strong> Advanced client-side JavaScript sensors monitor DOM mutations, layout reflows, garbage collection pauses, and execution timings. Injecting heavy analytical workloads into the host page context creates massive, easily detectable behavioral anomalies.</li>
+<li><strong>Forensic Hygiene &amp; Ephemeral Footprints:</strong> Writing intermediate task files, raw base64 strings, or model tokens to local workstation disk leaves persistent artifacts that compromise operational security and clutter host storage.</li>
+</ol>
+<p>The earliest prototype (Manifest V3 commit <code>ce46289</code>, August 23, 2026) followed a straightforward, browser-centric model: the extension inspected the visible task surface, extracted text and media elements, constructed an in-memory archive, and attempted to hand the collected material to an external agent service.</p>
+<p>The initial implementation immediately exposed a fundamental architectural flaw at the boundary between the browser runtime and the external agent service. The early integration with Manus (<code>https://manus.im/app/...</code>) attempted to bridge the authenticated browser session with an external agent workflow. As captured in forensic logs (<code>LOGS/agent_task_browser_diagnosis_2026-08-23.md</code>), opening workflow-created task URLs inside the browser redirected to generic authentication dashboards rather than displaying the private task surface. The session environment—its cookies, origin security boundaries, and authorization contexts—was completely isolated from the developer-facing API surface. Furthermore, passing developer credentials or relying on agent-driven browser replication introduced severe fragility: ephemeral CI runners masked or invalidated developer API keys, while upstream authentication state drifted continuously.</p>
+<p>This failure solidified the foundational doctrine of the project:</p>
+<blockquote>
+<p><strong>Architecture Axiom 1:</strong> <em>The browser should be the capture edge, not the analysis plane.</em></p>
+</blockquote>
+<p>The browser should perform only the minimal, lightweight operations necessary to snapshot the visible task state. All storage, compute, keyframe extraction, and multimodal adjudication must be cleanly decoupled and handed off out-of-band.</p>
+<h3 id="12-the-architectural-pivot-commit-eb5a6bb-and-multi-tier-decoupling">1.2 The Architectural Pivot: Commit <code>eb5a6bb</code> and Multi-Tier Decoupling</h3>
+<p>Commit <code>eb5a6bb</code> permanently severed the browser from the external agent paradigm, replacing it with a direct, stateless model adapter layer (<code>AUTOMATION/model_api.py</code>) interfacing with OpenAI-compatible vision endpoints. Instead of attempting to reproduce or persist complex browser-session state, MfYRE established a clean, four-subsystem distributed topology.</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/02-architecture_diagram_1.png" alt="Figure 2.1: Distributed System Architecture and Multi-Tier Flow" /><p class="figure-caption">Figure 2.1: Distributed System Architecture and Multi-Tier Flow</p></div>
+<p>This decoupled architecture establishes rigid operational boundaries across seven distinct layers:</p>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Execution Context</th>
+<th>Core Function</th>
+<th>Security &amp; Telemetry Boundary</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Capture Layer</strong></td>
+<td>Windows Chromium / Edge</td>
+<td>DOM extraction, URL resolution</td>
+<td>Zero form/button mutation; zero local disk I/O; read-only DOM scraping.</td>
+</tr>
+<tr>
+<td><strong>Ingress Transport</strong></td>
+<td>Service Worker (<code>background.js</code>)</td>
+<td>PKZIP assembly, GitHub REST API client</td>
+<td>Pure in-memory array buffers; OAuth tokens confined to session RAM.</td>
+</tr>
+<tr>
+<td><strong>Storage &amp; Trigger</strong></td>
+<td>GitHub Private Repository</td>
+<td>Append-only event and artifact store</td>
+<td>Granular GitHub App token (<code>Contents: Read &amp; write</code>); branch isolation (<code>release3</code>).</td>
+</tr>
+<tr>
+<td><strong>Processing Worker</strong></td>
+<td>Ephemeral GitHub Actions Runner</td>
+<td>Media download, FFmpeg slicing, LLM call</td>
+<td>Disposable runner; repository secrets (<code>MODEL_API_KEY</code>) masked and never exposed to client.</td>
+</tr>
+<tr>
+<td><strong>Multimodal Intelligence</strong></td>
+<td>External LLM Provider APIs</td>
+<td>Rubric-grounded evaluation &amp; verification</td>
+<td>Stateless JSON completion calls over TLS 1.3; provider-agnostic fallback.</td>
+</tr>
+<tr>
+<td><strong>Observation Monitor</strong></td>
+<td>Linux Host (<code>tmux</code> daemon)</td>
+<td>Repository polling, TUI rendering, timer tracking</td>
+<td>Out-of-band monitoring; non-intrusive Git polling every 3 seconds.</td>
+</tr>
+<tr>
+<td><strong>Autonomous Controller</strong></td>
+<td>MfYREpro Supervisor (<code>live_loop/</code>)</td>
+<td>Task validation, FSM state enforcement, CDP input</td>
+<td>Fail-closed invariants; strict task-identity verification; paced typing policies.</td>
+</tr>
+</tbody>
+</table>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/02-architecture_diagram_2.png" alt="Figure 2.2: Detailed Module Class &amp;amp; Interface Structure" /><p class="figure-caption">Figure 2.2: Detailed Module Class &amp;amp; Interface Structure</p></div>
+<hr />
+<h2 id="part-ii-weaponization-on-the-fly-methodologies">Part II — Weaponization &amp; On-The-Fly Methodologies</h2>
+<h3 id="21-pure-in-memory-binary-zip-packaging">2.1 Pure In-Memory Binary ZIP Packaging</h3>
+<p>Standard browser-based automation tools and extensions that handle file archiving typically import third-party libraries (such as JSZip) or rely on the browser's download manager (<code>chrome.downloads.download()</code>). Both approaches represent critical security vulnerabilities:
+* Heavy external third-party libraries introduce complex dependency trees, prototype-pollution risks, and bundle bloat that conflicts with Manifest V3’s strict ban on remotely hosted code.
+* Leveraging <code>chrome.downloads</code> forces the payload onto the local physical drive (typically <code>C:\Users\&lt;user&gt;\Downloads\</code>), creating immediate forensic file-system artifacts (USN Journal entries, Master File Table records, Windows Amcache/Prefetch logs) and prompting anti-malware or security scanners to inspect the archive.</p>
+<p>To eliminate this disk footprint, I implemented a standalone, zero-dependency, in-memory <strong>PKZIP 2.0 binary synthesis engine</strong> directly inside <code>EXTENSION/taskexporter/background.js</code> using native typed array buffers (<code>Uint8Array</code>, <code>DataView</code>).</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/05-core-concepts-data-flow_diagram_2.png" alt="Figure 5.2: In-Memory PKZIP Class &amp;amp; Stream Serialization Model" /><p class="figure-caption">Figure 5.2: In-Memory PKZIP Class &amp;amp; Stream Serialization Model</p></div>
+<h4 id="technical-mechanics-of-the-in-memory-zip-encoder">Technical Mechanics of the In-Memory ZIP Encoder</h4>
+<p>The PKZIP format specification mandates a specific binary layout consisting of Local File Headers, file payloads, Central Directory Records, and an End of Central Directory (EOCD) record. The background service worker constructs these byte-for-byte in memory:</p>
+<ol>
+<li>
+<p><strong>Local File Header Structure (<code>0x04034b50</code>):</strong><br />
+   For each file entry (<code>prompt.txt</code>, <code>metadata.txt</code>, <code>INSTRUCTIONS.md</code>, and media reference manifests), a 30-byte header is synthesized:
+   * Bytes 0–3: Signature <code>0x04034b50</code> (Little Endian: <code>0x50, 0x4b, 0x03, 0x04</code>).
+   * Bytes 4–5: Minimum version required to extract (<code>0x0014</code> = 2.0).
+   * Bytes 6–7: General purpose bit flag (<code>0x0000</code>).
+   * Bytes 8–9: Compression method (<code>0x0000</code> = Stored / Uncompressed).
+   * Bytes 10–13: MS-DOS format file modification time and date.
+   * Bytes 14–17: 32-bit CRC-32 checksum computed across the uncompressed payload.
+   * Bytes 18–25: Compressed and uncompressed size (identical under Method 0).
+   * Bytes 26–29: Filename byte length and extra field length (<code>0x0000</code>).</p>
+</li>
+<li>
+<p><strong>IEEE 802.3 Cyclic Redundancy Check (CRC-32):</strong><br />
+   The engine implements an optimized, bitwise polynomial calculation:
+   $$\text{CRC-32 Polynomial} = \mathtt{0xEDB88320}$$
+   Every byte passes through a pre-computed or dynamically shifted register to generate the exact 32-bit integer expected by standard unpackers, preventing archive corruption errors on downstream extractors.</p>
+</li>
+<li>
+<p><strong>Central Directory Record (<code>0x02014b50</code>) &amp; EOCD (<code>0x06054b50</code>):</strong><br />
+   After serializing all file entries, the central directory table is written, encoding the relative memory offset of each Local File Header. Finally, the 22-byte EOCD record is appended, sealing the total record count and directory offsets.</p>
+</li>
+<li>
+<p><strong>Call-Stack Safe Base64 Serialization:</strong><br />
+   To transmit the binary archive via GitHub's JSON REST API, the <code>Uint8Array</code> must be converted to a Base64 string. A naïve implementation using <code>btoa(String.fromCharCode(...bytes))</code> immediately throws a <code>RangeError: Maximum call stack size exceeded</code> in V8 when processing payloads over 64 KB. MfYRE implements a chunked sliding-window buffer that slices the byte array into 32 KB (<code>0x8000</code>) segments:</p>
+</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="kd">function</span><span class="w"> </span><span class="nx">bytesToBase64</span><span class="p">(</span><span class="nx">bytes</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kd">let</span><span class="w"> </span><span class="nx">binary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;&#39;</span><span class="p">;</span>
+<span class="w">  </span><span class="kd">const</span><span class="w"> </span><span class="nx">chunkSize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mh">0x8000</span><span class="p">;</span><span class="w"> </span><span class="c1">// 32KB chunk limit</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kd">let</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="nx">bytes</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nx">chunkSize</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nx">binary</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="nb">String</span><span class="p">.</span><span class="nx">fromCharCode</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span><span class="w"> </span><span class="nx">bytes</span><span class="p">.</span><span class="nx">subarray</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span><span class="w"> </span><span class="nx">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="nx">chunkSize</span><span class="p">));</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nx">btoa</span><span class="p">(</span><span class="nx">binary</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>The entire packaging lifecycle executes in under 12 milliseconds, consumes negligible RAM, writes zero bytes to the host filesystem, and produces an RFC-compliant ZIP binary directly in the service worker runtime.</p>
+<h3 id="22-media-handling-the-url-reference-manifest-architecture">2.2 Media Handling: The URL-Reference Manifest Architecture</h3>
+<p>In the early design phase (v1.0.0 – v1.4.0), MfYRE attempted to fetch candidate images and video streams directly within the browser, converting media blobs into base64 strings or packing binary blobs directly into <code>input/task.zip</code>.</p>
+<p>This approach collided with hard platform constraints:
+* <strong>Memory Exhaustion:</strong> High-definition video streams and 4K image comparisons on Multimango or Workada frequently exceed 150 MB per task. Storing multiple video blobs in browser RAM caused service worker termination and renderer crashes.
+* <strong>API Transfer Ceilings:</strong> The GitHub Contents API enforces a hard request payload ceiling: single files committed via <code>PUT /repos/.../contents/...</code> cannot exceed <strong>24 MB</strong> (<code>github.max_archive_bytes = 25165824</code>). Attempting to commit dense binary media failed with <code>413 Payload Too Large</code> or <code>422 Unprocessable Entity</code>.
+* <strong>Git Repository Bloat:</strong> Committing hundreds of megabytes of binary media directly into the Git commit tree rapidly inflated repository size, severely degrading clone and fetch performance on CI runners.</p>
+<h4 id="the-v170-url-reference-paradigm">The v1.7.0 URL-Reference Paradigm</h4>
+<p>Introduced in Version 1.7.0, MfYRE transitioned to an asynchronous <strong>URL-Reference Manifest Architecture</strong>. Instead of carrying the heavy binary media through the browser upload path, the content script extracts the authenticated content delivery network (CDN) URLs and signed Azure Blob Storage Shared Access Signature (SAS) tokens directly from the DOM:</p>
+<div class="codehilite"><pre><span></span><code>input/task.zip
+├── prompt.txt
+├── metadata.txt
+├── INSTRUCTIONS.md
+├── image_a_url.txt
+└── image_b_url.txt
+</code></pre></div>
+
+<p>By extracting and persisting only the signed SAS URLs:
+1. The exported <code>task.zip</code> payload shrinks by over <strong>99.9%</strong>, dropping from ~150 MB down to an ultra-lightweight <strong>15 KB to 25 KB</strong>.
+2. Browser memory consumption drops to near zero, permitting instant exports regardless of media resolution.
+3. The upload completes over the GitHub Contents API in milliseconds, completely bypassing the 24 MB ceiling.</p>
+<h4 id="ephemeral-sas-lifetimes-extraction-timing">Ephemeral SAS Lifetimes &amp; Extraction Timing</h4>
+<p>Azure Blob SAS tokens grant temporary read permissions via cryptographically signed query parameters (<code>?sv=2021-08-06&amp;se=...&amp;sr=b&amp;sp=r&amp;sig=...</code>). Crucially, these tokens carry strict expiration windows—typically <strong>15 to 60 minutes</strong>.</p>
+<p>This created a specific operational requirement: the GitHub Actions runner must materialize the remote media within minutes of task export. If an operator attempts to re-run analysis days later via <code>workflow_dispatch</code>, the SAS token returns <code>HTTP 403 Forbidden</code>. The system detects this condition explicitly in <code>AUTOMATION/analyze_task.py</code>, failing gracefully with:</p>
+<div class="codehilite"><pre><span></span><code>HTTP 403 Forbidden: Signed SAS token expired before media fetch. 
+Task must be re-exported from active browser session.
+</code></pre></div>
+
+<h3 id="23-external-media-processing-ffmpeg-multimodal-slicing">2.3 External Media Processing: FFmpeg Multimodal Slicing</h3>
+<p>Once the ephemeral GitHub Actions runner receives <code>task.zip</code> and fetches the remote media streams, the heavy computational work of video and audio transformation is executed entirely out-of-band using <strong>FFmpeg</strong>.</p>
+<p>Multimodal vision LLMs cannot ingest raw H.264/HEVC video containers or continuous MP4 streams directly; they require discrete, high-fidelity visual representations and structured audio characteristics. <code>AUTOMATION/analyze_task.py</code> orchestrates two specialized FFmpeg pipelines:</p>
+<h4 id="1-chronological-motion-slicing-visual-dynamics">1. Chronological Motion Slicing (Visual Dynamics)</h4>
+<p>To evaluate video comparison tasks (<code>text-to-video-compare</code>, <code>text-to-video-ranking</code>, <code>image-to-video-ranking</code>), the runner captures 6 sharp, chronologically distributed keyframes scaled to a standardized resolution:</p>
+<div class="codehilite"><pre><span></span><code>ffmpeg<span class="w"> </span>-v<span class="w"> </span>error<span class="w"> </span>-i<span class="w"> </span>candidate_video.mp4<span class="w">   </span>-vf<span class="w"> </span><span class="s2">&quot;fps=1,scale=&#39;min(720,iw)&#39;:-2&quot;</span><span class="w">   </span>-vframes<span class="w"> </span><span class="m">6</span><span class="w">   </span>-q:v<span class="w"> </span><span class="m">2</span><span class="w">   </span>keyframes/frame_%02d.jpg
+</code></pre></div>
+
+<ul>
+<li><strong>Framerate &amp; Scaling:</strong> Slices at 1 fps while dynamically downscaling the width to a maximum of 720 pixels (preserving aspect ratio with <code>-2</code>). This suppresses high-frequency encoding noise while keeping the token footprint within optimal vision model attention limits.</li>
+<li><strong>Temporal Progression:</strong> Extracting 6 discrete frames allows the vision model to inspect temporal consistency, motion coherence, object deformation, and physical plausibility across the generation duration.</li>
+</ul>
+<h4 id="2-deep-audio-stream-inspection-volumedetect">2. Deep Audio Stream Inspection (<code>volumedetect</code>)</h4>
+<p>Modern video generation models increasingly generate synchronized audio tracks (speech, ambient sound, musical accompaniment). Evaluating video quality without analyzing the audio stream leads to inaccurate verdicts. The runner executes an audio-only filter pass:</p>
+<div class="codehilite"><pre><span></span><code>ffmpeg<span class="w"> </span>-v<span class="w"> </span>error<span class="w"> </span>-i<span class="w"> </span>candidate_video.mp4<span class="w">   </span>-af<span class="w"> </span><span class="s2">&quot;volumedetect&quot;</span><span class="w">   </span>-vn<span class="w"> </span>-sn<span class="w"> </span>-f<span class="w"> </span>null<span class="w"> </span>-
+</code></pre></div>
+
+<p>The standard error output is parsed using regular expressions to extract critical acoustic metrics:
+* <strong>Mean Volume (<code>mean_volume: -XX.X dB</code>):</strong> Detects whether the track has meaningful sound or is near-silent.
+* <strong>Max Volume (<code>max_peak: -X.X dB</code>):</strong> Detects clipping or digital distortion.
+* <strong>Audio Codec &amp; Stream Presence:</strong> Identifies missing audio channels or corrupted stream headers.</p>
+<p>These metrics are dynamically injected into the system prompt passed to the vision model under the <code>Audio Quality &amp; Sync</code> rubric dimension, allowing the AI to penalize videos with artificial clipping, desynchronized lip movement, or silent audio tracks.</p>
+<h3 id="24-deterministic-artifact-naming-directory-collisions">2.4 Deterministic Artifact Naming &amp; Directory Collisions</h3>
+<p>In high-throughput annotation pipelines, multiple evaluators or automated loops process dozens of tasks per hour. Without deterministic naming, task archives overwrite one another, or generate unsearchable GUID hashes that destroy audit trails.</p>
+<p>MfYRE implements an intelligent, content-derived slugification and collision-detection algorithm:</p>
+<p>$$\text{Task Path} = \mathtt{OUTPUT/}\langle\text{task-type}\rangle\mathtt{/}\text{YY-MM-DD}-\langle\text{slug}\rangle$$</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/05-core-concepts-data-flow_diagram_3.png" alt="Figure 5.3: Collision-Free Slug Generation &amp;amp; GitHub API Folder Allocation" /><p class="figure-caption">Figure 5.3: Collision-Free Slug Generation &amp;amp; GitHub API Folder Allocation</p></div>
+<ol>
+<li><strong>Stopword Elimination:</strong> Generic words commonly found at the beginning of generative prompts (<code>"a photo of"</code>, <code>"generate a realistic"</code>, <code>"high quality render"</code>) are stripped using token exclusion dictionaries.</li>
+<li><strong>Deterministic Slug:</strong> The first 6 meaningful words are hyphenated and capped at 52 characters (e.g., <code>26-09-25-surrealist-landscape-giant-water-lilies</code>).</li>
+<li><strong>Collision Disambiguation:</strong> Before uploading, <code>background.js</code> issues a lightweight <code>GET</code> request to the GitHub Contents API. If the folder path already exists (<code>HTTP 200 OK</code>), the worker increments a counter (<code>-2</code>, <code>-3</code>, etc.) until a free <code>HTTP 404</code> slot is located.</li>
+</ol>
+<p>This ensures every single evaluated task has an immutable, human-readable directory identity that links directly to its prompt content and date of creation.</p>
+<hr />
+<h2 id="part-iii-evading-modern-defenses-telemetry">Part III — Evading Modern Defenses &amp; Telemetry</h2>
+<h3 id="31-reducing-the-browser-footprint-the-principle-of-dom-quietness">3.1 Reducing the Browser Footprint: The Principle of DOM Quietness</h3>
+<p>When building client-side automation, the primary vector of exposure is often not network traffic, but <strong>DOM mutation telemetry</strong>. Modern anti-fraud and anti-bot systems (e.g., DataDome, HUMAN Security, Cloudflare Turnstile, and bespoke platform sensors) deploy JavaScript hooks that continuously monitor the browser DOM:
+* <code>MutationObserver</code> listeners track dynamically inserted <code>&lt;div&gt;</code> elements, unexpected modal dialogs, or injected overlays.
+* Event listeners audit <code>isTrusted</code> flags on pointer and keyboard events.
+* Style recalculation and layout reflow timings are measured to profile background scripts.</p>
+<p>In early iterations of MfYRE, the extension displayed visual feedback to the user via toast notifications injected directly into the DOM (e.g., <code>&lt;div class="mfyre-toast"&gt;Exporting task...&lt;/div&gt;</code>).</p>
+<p><strong>Commit <code>d3f3560</code> permanently eradicated DOM toasts.</strong></p>
+<p>Code review and live testing revealed that mutating the host DOM solely to display cosmetic status notifications introduced an unnecessary telemetry footprint. The platform’s client-side scripts could trivially detect the presence of un-styled or extension-specific DOM classes, inferring the presence of an automation extension.</p>
+<p>The project adopted a strict doctrine of <strong>DOM Quietness</strong>:</p>
+<blockquote>
+<p><strong>Architecture Axiom 2:</strong> <em>If the host browser does not strictly require information to complete the task, the extension must never render it into the DOM.</em></p>
+</blockquote>
+<p>All status logging was routed out-of-band:
+* Extension state is emitted via <code>console.debug()</code> or internal <code>chrome.runtime</code> messaging.
+* Operational monitoring is delegated to the external Linux terminal monitor (<code>task_monitor.py</code>).
+* Visual UI elements are restricted to a developer HUD overlay (<code>Ctrl+Shift+M</code>) that mounts only when explicitly invoked and remains detached from task form hierarchies.</p>
+<h3 id="32-timing-as-an-explicit-policy-vs-bot-evasion-myths">3.2 Timing as an Explicit Policy vs. Bot-Evasion Myths</h3>
+<p>A pervasive misconception in security automation is that mimicking human typing can "trick" sophisticated bot detection systems. In <code>AUTOMATION/live_loop/interaction_policy.py</code>, the project explicitly addresses this distinction:</p>
+<div class="codehilite"><pre><span></span><code><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TimingPolicy</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Conservative UI timing defaults, not bot-evasion settings.&#39;&#39;&#39;</span>
+
+    <span class="n">poll_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.25</span>
+    <span class="n">post_hotkey_wait_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span>
+    <span class="n">start_settle_seconds</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">character_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.045</span>
+    <span class="n">space_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.02</span>
+    <span class="n">punctuation_pause</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.11</span>
+    <span class="n">paragraph_pause</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.18</span>
+    <span class="n">max_explanation_chars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">280</span>
+</code></pre></div>
+
+<p>The pacing model implemented in <code>typing_delays()</code> is not designed to evade behavioural biometrics through pseudorandom jitter. Modern behavioural biometrics easily detect synthetic Gaussian jitter. Instead, the pacing policy exists to satisfy <strong>browser UI stability and event loop registration invariants</strong>:</p>
+<ol>
+<li><strong>Virtual DOM Event Batching:</strong> Modern React/Vue frontends batch keystroke events. Blasting a 300-word explanation into an <code>HTMLTextAreaElement</code> via instant JavaScript value assignment (<code>textarea.value = text</code>) frequently bypasses the framework's synthetic <code>onChange</code> handlers, leaving the underlying state empty and disabling the "Submit" button.</li>
+<li><strong>Input Buffer Saturation:</strong> Sending raw CDP keystroke packets without inter-character delays causes Chromium's renderer process to drop input events during frame rendering cycles.</li>
+<li><strong>Readable Auditability:</strong> Operators watching the live Windows VM via remote desktop can visually verify that the explanation text matches the model's adjudication before the submission phase executes.</li>
+</ol>
+<h3 id="33-authentication-security-the-github-app-device-flow-boundary">3.3 Authentication Security: The GitHub App Device Flow Boundary</h3>
+<p>Managing authentication credentials inside client-side browser extensions represents a notorious vulnerability surface. Developers routinely make dangerous architectural compromises:
+* Embedding personal access tokens (PATs) or service account keys in extension files.
+* Requesting broad OAuth scopes that grant full administrative read/write access across entire user profiles.
+* Storing access tokens in unencrypted local disk storage (<code>chrome.storage.local</code> or <code>window.localStorage</code>), exposing credentials to disk forensics, malware, or local extraction.</p>
+<p>MfYRE enforces an enterprise-grade credential containment boundary:</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/01-overview_diagram_2.png" alt="Figure 1.2: Security &amp;amp; Token Privacy Isolation Boundary" /><p class="figure-caption">Figure 1.2: Security &amp;amp; Token Privacy Isolation Boundary</p></div>
+<h4 id="1-zero-persistent-disk-storage-chromestoragesession">1. Zero Persistent Disk Storage (<code>chrome.storage.session</code>)</h4>
+<p>In commit <code>45fdad7</code>, MfYRE migrated all token management from <code>chrome.storage.local</code> to <code>chrome.storage.session</code>.
+* <code>chrome.storage.session</code> stores data exclusively in browser process memory (RAM).
+* The data is never written to disk.
+* As soon as the browser tab closes or the parent process terminates, all authentication tokens and device codes are irreversibly vaporized. Forensic imaging of the workstation disk reveals zero traces of active session credentials.</p>
+<h4 id="2-rfc-8628-oauth-20-device-authorization-grant">2. RFC 8628 OAuth 2.0 Device Authorization Grant</h4>
+<p>Rather than generating overprivileged PATs, MfYRE leverages the RFC 8628 Device Flow:
+1. The user inputs the public <strong>GitHub App Client ID</strong> into the popup.
+2. The background worker queries <code>https://github.com/login/device/code</code> to obtain a short-lived <strong>Device Code</strong> and an 8-character <strong>User Code</strong> (e.g., <code>WD4A-56G8</code>).
+3. The user authorizes the application at <code>https://github.com/login/device</code> in an authenticated session.
+4. The background worker polls the OAuth endpoint until the token is issued.</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/03-installation-setup_diagram_1.png" alt="Figure 3.1: GitHub App Registration &amp;amp; Device Authorization Sequence" /><p class="figure-caption">Figure 3.1: GitHub App Registration &amp;amp; Device Authorization Sequence</p></div>
+<h4 id="3-strict-least-privilege-scoping">3. Strict Least-Privilege Scoping</h4>
+<p>The underlying GitHub App is granted a single permission:
+$$\text{Permission} = \mathtt{Repository\ permissions} \rightarrow \mathtt{Contents:\ Read\ \&amp;\ write}$$
+It has zero access to user emails, personal repositories, organizational settings, repository secrets, or Actions workflow definitions. Even in the event of total memory compromise of a client workstation, the leaked token can only write task files to the target repository.</p>
+<h4 id="4-complete-isolation-of-model-secrets">4. Complete Isolation of Model Secrets</h4>
+<p>Under no circumstances are model API keys (<code>OPENAI_API_KEY</code>, <code>ANTHROPIC_API_KEY</code>, <code>GROQ_API_KEY</code>) shared with the client extension. Model keys reside strictly within encrypted GitHub Actions repository secrets. The client never sees, handles, or requests LLM credentials.</p>
+<h3 id="34-the-boundary-between-evasion-and-observability">3.4 The Boundary Between Evasion and Observability</h3>
+<p>A central finding of the MfYRE project is that modern telemetry is deeply layered. Attempting to bypass a defensive control at one layer invariably illuminates an observable footprint at another:</p>
+<ul>
+<li><strong>Layer 1: Process &amp; Binary Telemetry (Sysmon, CrowdStrike, EDR):</strong> Executable creation, DLL injection, unsigned binaries, thread creation.</li>
+<li><strong>Layer 2: Host Event Tracing (ETW, AMSI, API Call Stacks):</strong> Antimalware Scan Interface queries, suspicious RPC calls, unusual DevTools attachments.</li>
+<li><strong>Layer 3: Network &amp; Transport Telemetry (Zeek, Suricata, DNS, TLS Handshakes):</strong> High-frequency HTTP beaconing, self-signed certificates, unfamiliar proxy endpoints.</li>
+<li><strong>Layer 4: In-Browser Script &amp; DOM Telemetry (MutationObserver, Pointer Events):</strong> Injected class names, synthetic pointer clicks (<code>isTrusted: false</code>), rapid form fills.</li>
+<li><strong>Layer 5: Remote Workflow &amp; Audit Telemetry (GitHub Audit Logs, API Rate Limits):</strong> API token usage frequency, commit patterns, repository permission elevation.</li>
+</ul>
+<p>When operating automation across monitored environments:
+* <strong>Process Level:</strong> Injecting DLLs or running unbacked native executables trips EDR hooks (AMSI, Sysmon Event ID 1 / 7).
+* <strong>API Level:</strong> Using standard automation tools (Puppeteer, Selenium) exposes recognizable JavaScript objects (<code>window.navigator.webdriver = true</code>).
+* <strong>Network Level:</strong> Routing traffic through public cloud proxies or unfamiliar IP subnets triggers Cloudflare/DataDome WAF blocking.</p>
+<p>MfYRE sidesteps these pitfalls by utilizing <strong>indigenous, trusted channels</strong>:
+1. It runs inside a legitimate, domain-joined Windows Chromium instance using standard browser extensions.
+2. It interacts over localhost CDP sockets (<code>192.168.86.21:9222</code>) already utilized by corporate tools.
+3. Outbound data flows exclusively over TLS 1.3 to <code>api.github.com</code>—a fully whitelisted corporate domain on almost every enterprise network.
+4. Heavy processing occurs in GitHub's IP space, decoupling the client's workstation IP from model API query bursts.</p>
+<hr />
+<h2 id="part-iv-testing-in-the-wire-feedback-loops">Part IV — Testing in the Wire &amp; Feedback Loops</h2>
+<h3 id="41-from-static-automation-to-a-closed-feedback-loop">4.1 From Static Automation to a Closed Feedback Loop</h3>
+<p>The critical architectural leap from MfYRE to <strong>MfYREpro</strong> occurred when the system was subjected to sustained live testing.</p>
+<p>Static automation frameworks operate linearly:
+$$\text{Click} \longrightarrow \text{Wait} \longrightarrow \text{Type} \longrightarrow \text{Submit}$$
+In production environments, dynamic web applications fail continuously under this model: network latency fluctuates, model generation times vary from 10 to 90 seconds, tasks time out and rotate unexpectedly, and UI layouts shift dynamically.</p>
+<p>To operate autonomously, the architecture required an <strong>out-of-band feedback loop</strong>. The feedback loop is anchored by <code>RELEASE/task_monitor.py</code>, a multi-threaded terminal operations hub running within a managed <code>tmux</code> session on the Linux control plane. The monitor's background sync daemon polls the remote Git repository every 3 seconds (<code>git ls-remote</code> / <code>git pull</code>), tracking completion states, active countdown timers, and newly committed <code>REPORT.md</code> files.</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/13-task-monitor-cli-reference_diagram_1.png" alt="Figure 13.1: Task Monitor Dual-Pane TUI Architecture" /><p class="figure-caption">Figure 13.1: Task Monitor Dual-Pane TUI Architecture</p></div>
+<p>The sequence of events from keypress to adjudication is fully asynchronous and decoupled:</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/02-architecture_diagram_3.png" alt="Figure 2.3: Sequence of Events from Keypress to Report Generation" /><p class="figure-caption">Figure 2.3: Sequence of Events from Keypress to Report Generation</p></div>
+<h3 id="42-durable-state-vs-ephemeral-memory">4.2 Durable State vs. Ephemeral Memory</h3>
+<p>A production automation controller cannot safely store its operational memory in volatile process RAM. If an agent crashes, a network connection drops, or an operator restarts the loop, the system must retain its historical context and safety boundaries.</p>
+<p>MfYREpro divides state into two strictly separated JSON stores inside <code>mfyre/state/</code>:</p>
+<ol>
+<li><strong><code>live_loop_control.json</code> (The Execution Lease):</strong><br />
+   Governs real-time execution permissions. The controller enforces a <strong>bounded lease model</strong>:</li>
+</ol>
+<div class="codehilite"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;active&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;lease_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;8f12a9c4-...&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;max_cycles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;completed_cycles&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;cycle_in_progress&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;shutdown_reason&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span>
+<span class="p">}</span>
+</code></pre></div>
+
+<p>If <code>completed_cycles</code> reaches <code>max_cycles</code>, or if an operator issues <code>python3 live_loop.py stop "investigating DOM change"</code>, the lease is revoked immediately. The loop shuts down gracefully without leaving orphan processes.</p>
+<ol start="2">
+<li><strong><code>live_loop_memory.json</code> (Operational Knowledge Store):</strong><br />
+   Preserves what the system has verified about the environment across runs:
+   * Recorded DOM selector discoveries (e.g., <code>"The live task contract is four-choice with typed reasoning"</code>).
+   * Verified network topologies (e.g., <code>"Windows remote CDP reachable at 192.168.86.21:9222"</code>).
+   * Active blockers (e.g., <code>"Analyzer and browser disagree about the Both are bad decision"</code>).</li>
+</ol>
+<p>This separation guarantees that <strong>transient execution state</strong> can never corrupt or overwrite <strong>verified domain knowledge</strong>.</p>
+<h3 id="43-the-finite-state-machine-fsm">4.3 The Finite-State Machine (FSM)</h3>
+<p>The live loop is governed by an explicit, auditable Finite-State Machine implemented in <code>AUTOMATION/live_loop/state_machine.py</code>. Every cycle must transition through mandatory verification states:</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/02-architecture_diagram_4.png" alt="Figure 2.4: Task State Machine &amp;amp; Lifecycle Transitions" /><p class="figure-caption">Figure 2.4: Task State Machine &amp;amp; Lifecycle Transitions</p></div>
+<p>Notice the critical architectural divergence from traditional automation: <strong>every single state has an immediate, first-class branch to <code>SAFE_STOP</code>.</strong> At no point is the system permitted to "retry blindly" or infer missing parameters.</p>
+<h3 id="44-the-stale-result-hazard-live-testing-on-september-25-2026">4.4 The Stale-Result Hazard: Live Testing on September 25, 2026</h3>
+<p>The most severe operational vulnerability discovered during live testing on September 25, 2026, was the <strong>Stale-Result Hazard</strong>.</p>
+<p>During a supervised automation run on a timed Multimango task, MfYRE successfully exported a task package with the prompt:</p>
+<blockquote>
+<p><em>“Surrealist landscape giant water lilies floating in an iridescent mist”</em></p>
+</blockquote>
+<p>The package was committed, triggering the GitHub Actions workflow. However, while the vision model was performing multimodal inference (a 45-second window), the live browser task hit its internal countdown timer. The platform automatically rotated the active task, presenting a completely new sample:</p>
+<blockquote>
+<p><em>“Chinese watch magazine cover vintage typography”</em></p>
+</blockquote>
+<p>Ten seconds later, the CI workflow completed, committing <code>REPORT.md</code> with a verdict of <strong>Image B</strong> and a detailed justification evaluating the floating water lilies.</p>
+<p>Had MfYREpro been a naïve automation script that simply waited for a report and clicked the resulting button, it would have applied the water lily adjudication to the Chinese watch task—submitting completely nonsensical evaluations that would trigger immediate platform fraud flags.</p>
+<p>This incident established a foundational safety invariant enforced in <code>result_reader.py</code>:</p>
+<blockquote>
+<p><strong>Architecture Axiom 3:</strong> <em>Model result prompt identity must match live browser task identity.</em></p>
+</blockquote>
+<p>Before the controller is permitted to execute a single mouse click or keystroke:
+1. It queries the live browser DOM via CDP to extract the current active prompt string.
+2. It extracts the prompt string recorded in <code>extracted/prompt.txt</code> of the incoming result.
+3. It performs strict substring and token-set matching.
+4. If there is <strong>any divergence whatsoever</strong>, the result is classified as stale, all actions are aborted, and the controller halts closed.</p>
+<h3 id="45-contract-drift-and-the-both-are-bad-failure-mode">4.5 Contract Drift and the "Both Are Bad" Failure Mode</h3>
+<p>A second major failure mode uncovered during testing was <strong>Contract Drift</strong> between the model adapter and the live browser interface.</p>
+<p>The evaluation rubrics in <code>ANALYZER/TASKS/</code> had originally been designed around a classical 3-state decision space:
+$$\mathcal{S}_{\text{Model}} = {\text{Image A is better}, \text{Image B is better}, \text{Tie}}$$</p>
+<p>However, inspection of the live DOM on a newly updated task variant revealed that the platform had introduced a fourth radio button:
+$$\mathcal{S}_{\text{Browser}} = {\text{Choice A}, \text{Choice B}, \text{Tie}, \mathbf{Both\ are\ bad}}$$</p>
+<p>A common engineering temptation when encountering contract drift is to implement heuristic mapping (e.g., "if the model suggests severe defects in both, map to <em>Both are bad</em>", or "if the model outputs <em>Both are bad</em>, map to <em>Tie</em>").</p>
+<p>MfYREpro categorically rejects heuristic mapping:</p>
+<blockquote>
+<p><em>The controller must never manufacture semantic meaning that the model contract does not explicitly provide.</em></p>
+</blockquote>
+<p>The controller treats contract discrepancies as an immediate blocking error (<code>blockers: "Analyzer and browser disagree about the Both are bad decision"</code>). Execution halts, the lease is revoked, and the system prompts the architect to align the rubric system prompt before resuming.</p>
+<hr />
+<h2 id="part-v-the-evolution-to-pro-refinement-modularization-productionization">Part V — The Evolution to "Pro": Refinement, Modularization &amp; Productionization</h2>
+<h3 id="51-from-utility-to-controller-the-architecture-of-mfyrepro">5.1 From Utility to Controller: The Architecture of MfYREpro</h3>
+<p>The progression from MfYRE to MfYREpro represents a paradigm shift in system capability:</p>
+<div class="codehilite"><pre><span></span><code>MfYRE:    Passive, user-initiated DOM capture and packaging utility.
+MfYREpro: Autonomous, closed-loop desktop automation and workflow orchestration layer.
+</code></pre></div>
+
+<p>To achieve autonomy without sacrificing safety, MfYREpro wraps around the core MfYRE engine with a modular, highly decoupled subsystem architecture:</p>
+<div class="codehilite"><pre><span></span><code>mfyrepro/
+├── README.md                      # Root orchestration documentation
+├── system.md                      # Operational agent prompt &amp; directive
+└── mfyre/                         # Core engine submodule
+    ├── state/                     # Durable control plane
+    │   ├── live_loop_control.json # Dynamic lease control &amp; cycle counters
+    │   └── live_loop_memory.json  # Accumulated domain memory &amp; blockers
+    ├── AUTOMATION/                # Core automation engine
+    │   ├── analyze_task.py        # Vision-model adjudication runner
+    │   ├── model_api.py           # Multi-provider multimodal adapter
+    │   └── live_loop/             # MfYREpro Orchestration Subsystem
+    │       ├── browser_controller.py  # CDP input &amp; action dispatch
+    │       ├── cdp_observer.py        # Read-only DOM snapshot &amp; selector audit
+    │       ├── interaction_policy.py  # Timing, pacing, &amp; text normalization
+    │       ├── result_reader.py       # Canonical status.json/REPORT.md validator
+    │       └── state_machine.py       # Finite-state machine &amp; safety gates
+    ├── RELEASE/
+    │   ├── task_monitor.py        # Dual-pane Curses/Rich TUI &amp; Git sync daemon
+    │   └── task_monitor.sh        # Managed tmux session wrapper
+    └── scripts/
+        ├── live_loop.py           # Operator lease management CLI
+        ├── live_progress.py       # Operational memory &amp; roadmap CLI
+        └── live_result.py         # Standalone result inspection CLI
+</code></pre></div>
+
+<h3 id="52-multi-provider-model-abstraction-transient-429-resilience">5.2 Multi-Provider Model Abstraction &amp; Transient 429 Resilience</h3>
+<p>Production automated pipelines cannot rely on a single LLM provider. Upstream rate limits (<code>HTTP 429 Too Many Requests</code>), quota depletions, network routing degradation, or model outages will immediately stall the entire operational loop.</p>
+<p>In commit <code>e1acfd7</code>, MfYRE enhanced <code>AUTOMATION/model_api.py</code> with multi-provider abstraction:</p>
+<div class="figure-container"><img class="figure-img" src="assets/diagrams/07-extension-guide_diagram_2.png" alt="Figure 7.2: Multimodal Provider Compatibility &amp;amp; Routing" /><p class="figure-caption">Figure 7.2: Multimodal Provider Compatibility &amp;amp; Routing</p></div>
+<h4 id="provider-parameter-normalization">Provider Parameter Normalization</h4>
+<p>Different model endpoints enforce divergent parameter naming conventions:
+* <strong>OpenAI (Modern):</strong> Enforces <code>max_completion_tokens</code>. Passing legacy <code>max_tokens</code> on newer models raises a validation error.
+* <strong>OpenRouter / Groq / Legacy:</strong> Expect <code>max_tokens</code>. Passing <code>max_completion_tokens</code> causes parameter rejection.</p>
+<p><code>AUTOMATION/model_api.py</code> normalizes these differences dynamically via <code>MODEL_TOKEN_PARAMETER</code>, guaranteeing seamless provider interoperability without modifying core extraction logic.</p>
+<h3 id="53-productionization-through-separation-of-concerns">5.3 Productionization Through Separation of Concerns</h3>
+<p>The evolution from MfYRE to MfYREpro demonstrates that system robustness is not achieved by building monolithic, all-powerful components. It is achieved by <strong>rigorously narrowing component responsibilities</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Subsystem Component</th>
+<th>Scope of Responsibility</th>
+<th>Explicit Non-Responsibilities</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Content Script</strong></td>
+<td>Scrape visible text, query SAS URLs, detect task type.</td>
+<td>Never modifies form inputs; never clicks submit; never evaluates rubrics.</td>
+</tr>
+<tr>
+<td><strong>Service Worker</strong></td>
+<td>In-memory PKZIP encoding; GitHub REST API commit.</td>
+<td>Never stores credentials on disk; never performs multimodal analysis.</td>
+</tr>
+<tr>
+<td><strong>GitHub Repository</strong></td>
+<td>Durable, append-only event log and artifact middle layer.</td>
+<td>Never manages real-time browser state; never executes client commands.</td>
+</tr>
+<tr>
+<td><strong>Actions Runner</strong></td>
+<td>Ephemeral FFmpeg processing and multimodal LLM execution.</td>
+<td>Never maintains persistent state across tasks; destroyed upon job completion.</td>
+</tr>
+<tr>
+<td><strong>Task Monitor</strong></td>
+<td>Dual-pane terminal visualization; remote Git synchronization.</td>
+<td>Never issues browser commands; never overrides controller decisions.</td>
+</tr>
+<tr>
+<td><strong>MfYREpro Controller</strong></td>
+<td>Task identity validation; FSM transitions; CDP input dispatch.</td>
+<td>Never guesses missing state; never acts on unverified or stale data.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="part-vi-complete-chronological-master-timeline-retrospective-lessons">Part VI — Complete Chronological Master Timeline &amp; Retrospective Lessons</h2>
+<h3 id="61-master-chronological-milestone-timeline">6.1 Master Chronological Milestone Timeline</h3>
+<p>The following timeline details the complete evolution of MfYRE and MfYREpro, synthesized from git commit logs, architectural milestone documents, and real-time operational memory:</p>
+<ul>
+<li>
+<p><strong>August 23, 2026 — Genesis (<code>ce46289</code>):</strong><br />
+  First prototype of MfYRE Manifest V3 extension deployed. Basic DOM scraping for Multimango text-to-image comparison tasks. Initial integration with external Manus agent framework fails due to browser-session cookie isolation and ephemeral secret masking (<code>LOGS/agent_task_browser_diagnosis_2026-08-23.md</code>).</p>
+</li>
+<li>
+<p><strong>August 28, 2026 — The Architectural Pivot (<code>eb5a6bb</code>):</strong><br />
+  Manus agent framework abandoned. MfYRE introduces <code>AUTOMATION/model_api.py</code>, establishing a stateless model adapter interface. The browser is officially redefined as a capture edge rather than an execution plane.</p>
+</li>
+<li>
+<p><strong>September 5, 2026 — Pure In-Memory Packaging (<code>7c891a2</code>):</strong><br />
+  Memory exhaustion and disk forensic footprint identified during large exports. Implementation of zero-dependency PKZIP 2.0 binary synthesis in <code>background.js</code> using <code>Uint8Array</code>, <code>DataView</code>, and CRC-32.</p>
+</li>
+<li>
+<p><strong>September 12, 2026 — Credential Containment (<code>f41b9d0</code>, v1.5.0):</strong><br />
+  Migration from <code>chrome.storage.local</code> to <code>chrome.storage.session</code>. Tokens reside exclusively in RAM. Implementation of GitHub App OAuth Device Flow (<code>/login/device/code</code>), scoping permissions strictly to repository contents.</p>
+</li>
+<li>
+<p><strong>September 18, 2026 — URL-Reference Paradigm (<code>b28a4c1</code>, v1.7.0):</strong><br />
+  Video tasks (<code>text-to-video-compare</code>) exhaust GitHub single-file API limits (24 MB). Introduction of URL-only reference extraction (<code>image_a_url.txt</code>, <code>video_b_url.txt</code>). Task archives shrink to 15 KB. FFmpeg 6 fps slicing and <code>volumedetect</code> deployed to GitHub Actions.</p>
+</li>
+<li>
+<p><strong>September 22, 2026 — DOM Quietness Enforced (<code>d3f3560</code>):</strong><br />
+  Removal of all DOM-injected toast notifications. Extension eliminates client-side DOM mutation telemetry.</p>
+</li>
+<li>
+<p><strong>September 24, 2026 — The Dual-Pane Operations Hub:</strong><br />
+  Deployment of <code>RELEASE/task_monitor.py</code> within managed <code>tmux</code> sessions. Operators gain real-time visibility into Git synchronization, active countdown timers, and formatted evaluation findings.</p>
+</li>
+<li>
+<p><strong>September 25, 2026 — Multi-Provider Engine &amp; Autonomous Live Testing (<code>e1acfd7</code>):</strong><br />
+  Multi-provider fallback engine deployed (NVIDIA NIM, Groq, OpenRouter, Google Gemini). Live automation testing of MfYREpro across Windows VM (<code>192.168.86.21:9222</code>) and Linux host.</p>
+</li>
+<li><strong>07:26 UTC:</strong> <code>scripts/live_result.py</code> validated against real task <code>26-09-25-t2i-images-only-60s-pick-2</code>, returning validated decision and canonical rationale.</li>
+<li><strong>08:15 UTC:</strong> Export of task <code>26-09-25-surrealist-landscape-giant-water-lilies-floating</code>. </li>
+<li><strong>08:17 UTC:</strong> <strong>The Stale-Result Hazard occurs.</strong> While the vision model adjudicates the water lilies, the browser page rotates to <code>"Chinese watch magazine cover"</code>. MfYREpro detects the identity divergence and immediately halts closed.</li>
+<li><strong>08:21 UTC:</strong> The Chinese watch task times out during verification; page rotates to basketball sprint task. Prior results successfully quarantined.</li>
+<li><strong>08:23 UTC:</strong> Supervised cycle successfully completes for <code>26-09-25-sprint-mid-stride-freeze-basketball-player</code>: matched prompt, clicked A, typed 225-character rationale at 45 ms/char with punctuation pauses, verified text registration, and submitted successfully.</li>
+<li><strong>08:33 UTC:</strong> Cockpit task rotates during wait phase; FSM executes clean, safe shutdown.</li>
+</ul>
+<hr />
+<h2 id="part-vii-retrospective-architectural-security-axioms">Part VII — Retrospective Architectural &amp; Security Axioms</h2>
+<p>The design, weaponization, and productionization of MfYRE and MfYREpro yield eight foundational axioms for security engineers, automation architects, and systems developers:</p>
+<h3 id="1-the-browser-should-be-an-edge-not-a-platform">1. The Browser Should Be an Edge, Not a Platform</h3>
+<p>Placing persistence, analytical computation, or complex logic inside the client browser introduces severe memory vulnerabilities and creates vast behavioral telemetry surfaces. Confine the browser strictly to passive observation, ephemeral packaging, and controlled input.</p>
+<h3 id="2-persistence-and-computation-must-be-physically-separated">2. Persistence and Computation Must Be Physically Separated</h3>
+<p>By designating GitHub as an append-only durable event store and GitHub Actions as disposable, ephemeral compute sandboxes, the system guarantees that worker crashes, network partitions, or runtime errors can never destroy operational history or corrupt state.</p>
+<h3 id="3-model-results-are-advisory-data-never-execution-authority">3. Model Results Are Advisory Data, Never Execution Authority</h3>
+<p>A model result cannot be trusted merely because it was successfully generated by an AI. A result is only valid if it satisfies a five-tier verification gauntlet:
+$$\text{Freshness} \land \text{Task Identity} \land \text{Contract Compliance} \land \text{Live DOM Match} \land \text{FSM Transition Rule}$$</p>
+<h3 id="4-fail-closed-behavior-is-a-core-reliability-primitive">4. Fail-Closed Behavior Is a Core Reliability Primitive</h3>
+<p>When an automation system encounters unexpected state—whether a rotated task, an unsupported UI choice, a disabled button, or an expired SAS token—the catastrophic response is to "guess" or "retry blindly." The system must halt closed, revoke its lease, preserve diagnostic state, and alert the operator.</p>
+<h3 id="5-telemetry-is-multi-layered-evasion-requires-footprint-minimization">5. Telemetry Is Multi-Layered; Evasion Requires Footprint Minimization</h3>
+<p>You cannot "spoof" your way around modern telemetry systems. Attempting to mask automation with artificial mouse curves or synthetic jitter fails against deep behavioral analytics. True evasion is achieved by minimizing observable actions: zero DOM mutation, zero persistent disk writes, indigenous network transports, and out-of-band analytical compute.</p>
+<h3 id="6-contract-boundaries-are-strict-operational-boundaries">6. Contract Boundaries Are Strict Operational Boundaries</h3>
+<p>When distributed components evolve independently (e.g., an AI rubric model and a target web application), interfaces drift. A 3-choice model cannot operate on a 4-choice UI. The system must treat contract drift as a critical system error rather than attempting heuristic semantic mapping.</p>
+<h3 id="7-durable-memory-changes-the-fundamental-nature-of-automation">7. Durable Memory Changes the Fundamental Nature of Automation</h3>
+<p>A script that relies on volatile memory is an ephemeral toy. By persisting structured, verified invariants (<code>live_loop_memory.json</code>) separately from dynamic execution leases (<code>live_loop_control.json</code>), the system transforms into an auditable, resilient state machine capable of surviving crashes, agent handoffs, and environmental reboots.</p>
+<h3 id="8-resilient-systems-are-defined-by-safe-transition-gates">8. Resilient Systems Are Defined by Safe Transition Gates</h3>
+<p>The ultimate measure of an autonomous automation system is not its speed, nor how much work it can perform concurrently without human oversight.</p>
+<blockquote>
+<p><strong>A resilient automation system is not defined by how much it can do automatically, but by how carefully it decides when it is safe to do the next thing.</strong></p>
+</blockquote>
+<hr />
+<h3 id="verification-checkpoint-system-sign-off">Verification Checkpoint &amp; System Sign-Off</h3>
+<div class="codehilite"><pre><span></span><code>MfYRE Core: v1.7.0 (Manifest V3) — PASS
+In-Memory PKZIP Engine: Uint8Array / DataView / CRC-32 — PASS
+Credential Isolation: chrome.storage.session (RAM Only) — PASS
+Least-Privilege Authorization: GitHub App RFC 8628 Device Flow — PASS
+Media Architecture: Ephemeral SAS URL-Reference Manifests — PASS
+Adjudication Engine: Ephemeral Actions + FFmpeg + Multi-Provider Vision LLMs — PASS
+Supervisor: MfYREpro FSM Closed-Loop Controller — PASS
+Safety Enforcements: Fail-Closed on Stale Results &amp; Contract Drift — PASS
+</code></pre></div>
+
+<hr />
+<h1 id="companion-field-report-runtime-instrumentation-in-process-signal-spoofing">COMPANION FIELD REPORT: RUNTIME INSTRUMENTATION &amp; IN-PROCESS SIGNAL SPOOFING</h1>
+<h2 id="the-workada_research_monitor-field-study">The <code>workada_research_monitor</code> Field Study</h2>
+<p><em>A field report from building, breaking, and rebuilding a runtime instrumentation and
+signal-spoofing toolkit — the <code>workada_research_monitor</code> project.</em></p>
+<hr />
+<blockquote>
+<p><strong>Scope and authorization.</strong> Everything described here was performed against software in a
+controlled research environment, under the rules laid out in this repository's
+<a href="../SECURITY.md"><code>SECURITY.md</code></a>: isolated VMs, synthetic accounts and test pages, no
+real credentials, immutable evidence handling. The project is an instrumentation and
+research tool — it is not intended for covert monitoring, credential theft, unauthorized
+process access, or deployment against third-party systems. This article is written in the
+same spirit: it documents <em>methodology and findings</em>, so that both researchers and
+defenders can reason about the technique space. An observed API call is evidence of a
+call, not proof of a completed operation — a discipline this project enforces in code and
+that this article enforces in prose.</p>
+</blockquote>
+<hr />
+<h2 id="part-i-genesis-concept-architecture_1">Part I: Genesis, Concept &amp; Architecture</h2>
+<h3 id="chapter-1-the-problem-space-watching-the-watchers">Chapter 1 — The Problem Space: Watching the Watchers</h3>
+<p>The project began with a deceptively simple research question: <em>what exactly does a modern
+"productivity monitoring" application observe, and what does it do with those observations?</em></p>
+<p>The target, <strong>Workada</strong>, is an Electron / Node.js desktop application in the same family as
+the time-tracking and activity-monitoring agents used across the gig-economy and remote-work
+world. Applications in this class typically combine several collection surfaces:</p>
+<ul>
+<li>periodic <strong>screenshots</strong> via the GDI stack (<code>BitBlt</code>, <code>PrintWindow</code>, device contexts);</li>
+<li><strong>keyboard activity</strong> inference via <code>SetWindowsHookEx</code> registration or high-frequency
+  <code>GetKeyState</code> / <code>GetAsyncKeyState</code> polling;</li>
+<li><strong>focus attribution</strong> via <code>GetForegroundWindow</code>, <code>GetWindowTextW</code>, and <code>GetClassNameW</code> —
+  i.e., "which site is the worker on right now," usually inferred from a browser <em>window
+  title</em>, not the actual URL;</li>
+<li><strong>file writes</strong> of captured imagery, and <strong>network sends</strong> carrying telemetry such as an
+  <code>activity_percentage</code> field.</li>
+</ul>
+<p>That last detail — a numeric field shipped inside a JSON-like payload over <code>WSASend</code> — is
+where the research question inverts. If a watcher's verdict about you is assembled from
+titles, class names, key-state booleans, and one integer in a socket buffer, then the
+watcher is not observing reality. It is observing a <em>narrow set of API surfaces</em>. And API
+surfaces can be instrumented, shaped, and — in an authorized test environment — spoofed.</p>
+<p>That inversion became the thesis of the project, and the title of this article: the most
+effective evasion is not disappearance. It is <strong>hiding in plain sight</strong> — leaving every
+sensor running, every heartbeat firing, and quietly controlling what the sensors report.</p>
+<h3 id="chapter-2-design-philosophy-observation-first-manipulation-second">Chapter 2 — Design Philosophy: Observation First, Manipulation Second</h3>
+<p>The first architectural decision was to build an <strong>observer before an operator</strong>. You cannot
+convincingly spoof a telemetry pipeline you have not measured. <a href="../config.py"><code>config.py</code></a>
+codifies this stance; it is deliberately verbose and states, up front:</p>
+<blockquote>
+<p>An observed API call is not automatically proof that Workada completed the operation: a
+capture API call is not proof that an image was successfully captured; opening an image
+path is not proof that bytes were written; a network send call is not proof of
+exfiltration; reading a window title is not proof of the active URL.</p>
+</blockquote>
+<p>This is more than scientific hygiene — it is also the evasion designer's map. Every
+"not proof" caveat is a <strong>seam</strong>: a place where the monitor's confidence in its own
+telemetry is lower than it appears. Part III of this article is, in large part, a walk
+through those seams.</p>
+<p>A second rule followed from the first: <strong>change one variable at a time</strong>. Every experimental
+run gets a unique directory, a written hypothesis, a controlled trigger, a JSONL event
+stream, a Markdown report, and a limitations note (see
+<a href="research-workflow.md"><code>docs/research-workflow.md</code></a>). This discipline is what later made the
+iterative weaponization loop in Part IV possible — and what keeps the findings defensible.</p>
+<h3 id="chapter-3-architecture-a-python-orchestrated-in-process-agent">Chapter 3 — Architecture: A Python-Orchestrated In-Process Agent</h3>
+<p>The toolkit is a two-sided system, documented in <a href="architecture.md"><code>docs/architecture.md</code></a>:</p>
+<div class="codehilite"><pre><span></span><code>CLI arguments
+    ↓
+frida.attach(PID or process name)
+    ↓
+hooks.build_agent()            ← Python assembles one JavaScript agent from modules
+    ↓
+Frida JavaScript hooks inside the target process
+    ↓ send({ type: &quot;event&quot;, ... })
+Python message callback
+    ↓
+Rich console + EventRecorder
+    ↓
+JSONL event stream + Markdown report
+</code></pre></div>
+
+<p>The <strong>observer</strong> half ships as modular hook packs under <a href="../hooks/"><code>hooks/</code></a>, each of which
+contributes a fragment of JavaScript to the generated agent:</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Watches</th>
+<th>Key caveat (by design)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>screenshot</code></td>
+<td><code>GetDC</code>/<code>GetWindowDC</code>/<code>BitBlt</code>/<code>PrintWindow</code>, bitmaps</td>
+<td>A capture call ≠ a completed screenshot</td>
+</tr>
+<tr>
+<td><code>keylog</code></td>
+<td><code>SetWindowsHookEx</code> (typed) + key-state polling</td>
+<td>Records registration/polling, never key values</td>
+</tr>
+<tr>
+<td><code>file_ops</code></td>
+<td>write-intent <code>CreateFileW</code> on image paths</td>
+<td>Intent ≠ bytes written</td>
+</tr>
+<tr>
+<td><code>network</code></td>
+<td><code>send</code>/<code>WSASend</code>, WinHTTP/WinINet metadata</td>
+<td>Destination/payload context is limited</td>
+</tr>
+<tr>
+<td><code>focus</code></td>
+<td>foreground window, title, class, WinEvent</td>
+<td>A title is not a URL</td>
+</tr>
+<tr>
+<td><code>inject</code></td>
+<td><code>OpenProcess</code>/memory/thread APIs</td>
+<td>Broad by necessity; noisy by admission</td>
+</tr>
+<tr>
+<td><code>browser_observation</code></td>
+<td>timing, module inventory, memory protection</td>
+<td>No renderer JS callbacks</td>
+</tr>
+</tbody>
+</table>
+<p>Two properties of this architecture matter for the evasion story:</p>
+<ol>
+<li><strong>The agent lives only in memory.</strong> Nothing is written into the target on disk; the
+   payload <em>is</em> the instrumentation session. This is the benign mirror of the "fileless"
+   doctrine, and Part II treats it as such.</li>
+<li><strong>The same pipeline that observes can also shape.</strong> The agent builder accepts a
+   <code>defense_mode</code> (<code>off</code> / <code>block</code> / <code>spoof</code>), and the generated JavaScript contains the
+   <em>active defense</em> module alongside the observers. One attach, two postures — observer and
+   adversary in a single process boundary, switched live over Frida RPC.</li>
+</ol>
+<p>The generated JavaScript deliberately uses conservative ES5-style syntax and a
+<code>findExport()</code> compatibility helper, because field testing (see the commit trail in
+Part VI) showed that export-lookup semantics differ across Frida releases. Boring
+compatibility work is weaponization work.</p>
+<hr />
+<h2 id="part-ii-weaponization-on-the-fly-methodologies_1">Part II: Weaponization &amp; On-The-Fly Methodologies</h2>
+<p>"Weaponization" in this project never meant building a deliverable for a third party. It
+meant something narrower and more instructive: <strong>turning an observation into a reliable,
+repeatable, on-the-fly manipulation primitive</strong>, and hardening it until it survives contact
+with the real target. Four primitives emerged.</p>
+<h3 id="chapter-4-in-memory-execution-as-the-delivery-vehicle">Chapter 4 — In-Memory Execution as the Delivery Vehicle</h3>
+<p>The foundational methodology is <em>on-the-fly</em> in the literal sense: the entire capability is
+delivered by <code>frida.attach()</code> to an already-running process. The agent is compiled from
+Python string templates at launch time, injected into the target's address space, and begins
+intercepting exports (<code>Interceptor.attach</code>) within milliseconds. Detach, and the process
+returns to its original state; the disk never changes.</p>
+<p>Two lessons fell out of building everything this way:</p>
+<ul>
+<li><strong>Staging is a state machine, not a file drop.</strong> The agent loads in phases — observers
+  first, then the active-defense module, then the inert placeholder manifest — and announces
+  each phase as a <code>STATUS</code> event. When a run went wrong in testing, the event stream told us
+  <em>which stage</em> failed, not merely <em>that</em> it failed. Iteration speed came from treating
+  load order as debuggable telemetry.</li>
+<li><strong>Constraints shape craft.</strong> The WSASend patcher (next chapter) could not grow a buffer;
+  the agent had to run on multiple Frida versions; the Python side had to import cleanly on
+  a non-Windows analysis host (<code>frida = None</code> fallback in <code>main.py</code>) so that the event and
+  report logic stayed testable under <code>pytest</code> on Linux. Every constraint forced the
+  manipulation to become <em>more</em> surgical, not less.</li>
+</ul>
+<h3 id="chapter-5-staging-payload-crafting-the-active-defense-mode-machine">Chapter 5 — Staging &amp; Payload Crafting: The Active-Defense Mode Machine</h3>
+<p>The second primitive is <a href="../hooks/active_defense.py"><code>hooks/active_defense.py</code></a>, a drop-in
+module that turns the instrumentation session from passive to active. Its design is
+deliberately minimal — three modes, controlled live over RPC:</p>
+<table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Behavior</th>
+<th>Doctrine</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>off</code></td>
+<td>Passthrough, no modification</td>
+<td>Baseline measurement</td>
+</tr>
+<tr>
+<td><code>block</code></td>
+<td>Force failures / empty results</td>
+<td>Denial — loud but simple</td>
+</tr>
+<tr>
+<td><code>spoof</code></td>
+<td>Return fixed, plausible values</td>
+<td>Deception — quiet and shaped</td>
+</tr>
+</tbody>
+</table>
+<p>From a running session, posture changes are one RPC call:</p>
+<div class="codehilite"><pre><span></span><code><span class="n">script</span><span class="o">.</span><span class="n">exports</span><span class="o">.</span><span class="n">spoof</span><span class="p">()</span>    <span class="c1"># shaped, plausible telemetry</span>
+<span class="n">script</span><span class="o">.</span><span class="n">exports</span><span class="o">.</span><span class="n">block</span><span class="p">()</span>    <span class="c1"># total denial</span>
+<span class="n">script</span><span class="o">.</span><span class="n">exports</span><span class="o">.</span><span class="n">off</span><span class="p">()</span>      <span class="c1"># pure observation</span>
+</code></pre></div>
+
+<p>The spoof payload is intentionally <em>boring-looking data</em>: a task-page title
+(<code>T2I image comparison -- Images only (60s pick)</code>), a well-formed task URL on the expected
+domain, and a browser-like window class (<code>Chrome_WidgetWin_1</code>). Nothing in the spoof set is
+exotic, and that is the point — plausible traffic is quieter than absent traffic. The mode
+machine also emits a <code>DEFENSE</code> event on every change, because a spoof you cannot account for
+in your own evidence trail is just self-deception.</p>
+<h3 id="chapter-6-surgical-buffer-patching-the-activity_percentage-case-study">Chapter 6 — Surgical Buffer Patching: The <code>activity_percentage</code> Case Study</h3>
+<p>The third primitive is the standalone <a href="../frida_script.js"><code>frida_script.js</code></a>: an
+interceptor on <code>ws2_32!WSASend</code> that rewrites one JSON field — <code>activity_percentage</code> — to
+<code>99</code>, <em>in place, in memory, on the wire path</em>, microseconds before the bytes leave the
+process.</p>
+<p>The interesting part is not the goal but the constraints, because they are the constraints
+of all on-the-fly payload crafting:</p>
+<ol>
+<li><strong>Structure parsing at the ABI level.</strong> The hook receives <code>LPWSABUF</code>; it must walk the
+   <code>WSABUF</code> layout (<code>len</code>, then <code>buf</code> pointer) with correct 32-bit vs 64-bit offsets
+   (<code>Process.pointerSize</code>) before it can even read the payload.</li>
+<li><strong>Length invariance.</strong> The buffer length was fixed by the caller. The patcher refuses to
+   write unless <code>oldValue.length == newValue.length</code> — replacing a two-digit value with a
+   two-digit value — because growing the buffer would corrupt adjacent memory and turn an
+   invisible edit into a crash. <em>The most important line in the script is the one that
+   declines to patch.</em></li>
+<li><strong>Format fragility.</strong> The patch is anchored on the literal <code>"activity_percentage"</code> key.
+   Whitespace changes, minification, or a move to binary framing would silently defeat it —
+   a finding in itself, recorded in the README's troubleshooting notes: string-anchored
+   on-the-fly patches are brittle by nature, and discovering <em>when they stop firing</em> is a
+   detection-feedback loop (Part IV).</li>
+</ol>
+<p>This primitive is the purest expression of the article's thesis: the send still happens, the
+TLS session still establishes, the server still receives a well-formed heartbeat — only one
+integer is a lie.</p>
+<h3 id="chapter-7-the-zero-thread-spoof-deceiving-attribution-without-touching-the-target">Chapter 7 — The Zero-Thread Spoof: Deceiving Attribution Without Touching the Target</h3>
+<p>The fourth primitive, <a href="../SpoofWindow/"><code>SpoofWindow/</code></a>, inverts the whole approach. Instead
+of instrumenting the watcher, it exploits the watcher's <em>attribution model</em> from outside.</p>
+<p>The observer runs (Part IV) supported the hypothesis that focus attribution leans heavily on
+the <strong>foreground window title and class</strong>. <code>SpoofWindow</code> is a ~30-line C# WinForms
+application that creates a window which is:</p>
+<ul>
+<li>titled <code>multimango.com - Task Page</code>,</li>
+<li>1×1 pixel, 1% opacity, borderless,</li>
+<li>positioned off-screen at <code>(-1000, -1000)</code>,</li>
+<li>hidden from the taskbar.</li>
+</ul>
+<p>To a human, nothing exists. To a title-and-class-based attribution loop, a perfectly
+legitimate task page appears to be open. No handle into the target process, no injected
+code, no patched buffer — the telemetry stream is <em>true</em>, it is just true about a decoy.
+This is "hiding in plain sight" in its most literal form, and it foreshadows Part III's
+central argument: <strong>shaping what sensors legitimately see beats fighting the sensors.</strong></p>
+<hr />
+<h2 id="part-iii-evading-modern-defenses-telemetry_1">Part III: Evading Modern Defenses &amp; Telemetry</h2>
+<p>A note on scope before the chapters: this project did <strong>not</strong> implement AMSI bypasses, ETW
+patching, or call-stack spoofing, and this article does not pretend otherwise. Those
+techniques define the <em>terrain</em> — the modern defensive stack any in-process tradecraft must
+reason about — so this part covers them conceptually, then pivots to what the project
+actually demonstrates about that terrain from live testing: the hook arms race, telemetry
+shaping, environmental camouflage, and counter-interception.</p>
+<h3 id="chapter-8-the-terrain-amsi-etw-call-stacks-and-userland-hooks">Chapter 8 — The Terrain: AMSI, ETW, Call Stacks, and Userland Hooks</h3>
+<p>Modern detection on Windows rests on a small set of telemetry pillars, and each pillar has a
+known adversarial counter-tradition:</p>
+<ul>
+<li><strong>AMSI</strong> (Antimalware Scan Interface) gives defenders content inspection of script and
+  .NET payloads at execution time; the offensive literature answers with in-memory patching
+  of the scan entry points.</li>
+<li><strong>ETW</strong> (Event Tracing for Windows) gives defenders a firehose of kernel and CLR events;
+  the counter-tradition suppresses or blinds specific providers from inside the process.</li>
+<li><strong>Call-stack analysis</strong> lets EDRs ask <em>"who really called this sensitive API?"</em>; the
+  counter-tradition forges or truncates stack frames so the call appears to originate from
+  a benign module.</li>
+<li><strong>Userland hooking</strong> is the EDR's own instrumentation of <code>ntdll</code> and friends; the
+  counter-tradition is <em>unhooking</em> — restoring pristine syscall stubs from a clean copy of
+  the DLL — and direct/indirect syscalls that step around the hooks entirely.</li>
+</ul>
+<p>Three honest observations from this project about that terrain:</p>
+<ol>
+<li><strong>The same API underlies both sides.</strong> The <code>Interceptor.attach</code> machinery this project
+   uses to observe and spoof is functionally the same userland-hook primitive an EDR uses to
+   monitor, and the same one an implant unhooks. Studying one side teaches you the other's
+   failure modes — which is exactly why instrumentation research is dual-use and why the
+   scope note at the top of this article exists.</li>
+<li><strong>The terrain notices you.</strong> <code>SECURITY.md</code> sets the expectation plainly: <em>"Expect
+   endpoint-security software to detect or block Frida instrumentation."</em> On-the-fly
+   in-memory execution evades <em>static</em> scrutiny, not <em>behavioral</em> scrutiny. A modern EDR
+   watches for the instrumentation itself.</li>
+<li><strong>Every bypass of a pillar creates a new signal.</strong> A patched scanner, a blinded provider,
+   an unhooked stub — each is itself an integrity anomaly that tamper-detection looks for.
+   This is the trap of the counter-tradition, and it is what led this project toward the
+   shaping-over-killing doctrine of the next chapter.</li>
+</ol>
+<h3 id="chapter-9-telemetry-shaping-vs-telemetry-killing">Chapter 9 — Telemetry Shaping vs. Telemetry Killing</h3>
+<p>The <code>block</code> mode of the active-defense module is a telemetry killer: screenshot APIs return
+<code>NULL</code> DCs and failure codes, <code>GetForegroundWindow</code> returns nothing, <code>send</code>/<code>WSASend</code> fail.
+It works — and it is <em>loud</em>. A monitoring agent that suddenly sees every capture API fail in
+perfect unison has not been blinded; it has been handed a high-confidence anomaly.</p>
+<p>The <code>spoof</code> mode is the interesting one. It leaves every call succeeding and instead shapes
+the <em>content</em>:</p>
+<ul>
+<li><code>GetWindowTextW</code> returns the fixed task-page title;</li>
+<li><code>GetClassNameW</code> returns <code>Chrome_WidgetWin_1</code>, so the decoy window classifies as a browser;</li>
+<li><code>GetKeyState</code>/<code>GetAsyncKeyState</code> always report <em>not pressed</em>;</li>
+<li><code>GetForegroundWindow</code> returns a non-null, deliberately fake <code>HWND</code>.</li>
+</ul>
+<p>The design principle that emerged in testing: <strong>denial is a detection event; deception is
+just data.</strong> A watcher that receives plausible, well-formed, self-consistent telemetry has
+nothing to alert on — its own pipeline becomes the cover. The defensive corollary is just as
+important: detectors should hunt for <em>implausibility and cross-source inconsistency</em> (a
+"Chrome" window that no browser process owns; activity reported while input devices are
+idle), not only for blocked or failed calls.</p>
+<h3 id="chapter-10-sleeping-and-hiding-environmental-camouflage">Chapter 10 — Sleeping and Hiding: Environmental Camouflage</h3>
+<p>Classic evasion "sleeps" to outlast sandboxes; this project found an application-level
+analogue. The camouflage problem for a decoy is not time but <em>presence</em>: how do you keep a
+lie alive on the desktop without a human ever seeing it?</p>
+<p><code>SpoofWindow</code> answers with four independent layers, each defeating a different viewer:</p>
+<table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Defeats</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Opacity = 0.01</code></td>
+<td>The human eye</td>
+</tr>
+<tr>
+<td><code>Location = (-1000, -1000)</code>, <code>Size = 1×1</code></td>
+<td>Screen-space inspection</td>
+</tr>
+<tr>
+<td><code>ShowInTaskbar = false</code></td>
+<td>Taskbar / Alt-Tab enumeration by a user</td>
+</tr>
+<tr>
+<td><code>FormBorderStyle = None</code></td>
+<td>Visual chrome that would betray a phantom window</td>
+</tr>
+</tbody>
+</table>
+<p>And crucially, one layer it does <em>not</em> have: anything hidden from the <strong>window manager</strong>.
+The decoy is a fully legal top-level window. Title-based attribution APIs see it because
+there is nothing illegitimate to see. The evasion lives entirely in the gap between "what
+the windowing system reports" and "what a human would notice" — a gap that exists because
+the watcher chose to trust a convenience API instead of ground truth.</p>
+<p>The generalizable lesson for both sides: <strong>every attribution shortcut is a hiding place.</strong>
+If your detection logic consumes <code>GetWindowTextW</code>, you have delegated your ground truth to
+whatever creates windows. Offense hides there; defense must cross-check there.</p>
+<h3 id="chapter-11-counter-interception-the-network-evasion-mirror-game">Chapter 11 — Counter-Interception: The Network Evasion Mirror Game</h3>
+<p>The network surface ran as a mirror game: the project intercepts the target's traffic to
+study it, while the target's design choices determine how hard that is — the same choices a
+privacy-conscious (or evasive) application would make:</p>
+<ol>
+<li><strong>TLS everywhere.</strong> Because the target is Electron/Node.js, all HTTPS and WebSocket
+   traffic is TLS-encrypted at the socket boundary. Raw <code>WSASend</code> inspection therefore splits
+   into two classes, which the network hook records explicitly: readable plaintext JSON/HTTP
+   (rare) versus encrypted streams logged with sizes and <code>isTls=true</code>.</li>
+<li><strong>The sanctioned skeleton key.</strong> Rather than attacking TLS, the project uses Chromium's
+   native <code>SSLKEYLOGFILE</code> support: launch the target with the variable set, capture with
+   <code>dumpcap</code>, and let Wireshark decrypt the session with the logged master secrets
+   (<a href="captures-and-pcap-guide.md"><code>docs/captures-and-pcap-guide.md</code></a>). It is a non-intrusive,
+   application-sanctioned interface — interception that no tamper detection fires on,
+   because nothing was tampered with.</li>
+<li><strong>Proxy-layer interception.</strong> For flows outside the key-log path, the documented stack is
+   Fiddler (HTTPS decryption with an installed root) plus Proxifier rules pinning the
+   target's traffic through it.</li>
+</ol>
+<p>The evasion-relevant finding cuts both ways. <em>For the researcher:</em> modern apps rarely
+protect traffic with anything beyond commodity TLS, so environment-level key logging is
+usually sufficient — no memory spelunking required. <em>For the application author:</em> if your
+telemetry integrity matters, <code>SSLKEYLOGFILE</code> inheritance and proxy-based inspection are your
+threat model, and certificate pinning plus environment hygiene checks are the counter.</p>
+<hr />
+<h2 id="part-iv-testing-in-the-wire-feedback-loops_1">Part IV: Testing In the Wire &amp; Feedback Loops</h2>
+<p>Weaponization that is not iterated against live telemetry is fan fiction. This part covers
+how the project tested itself: the run discipline, the evidence pipeline as a triage
+harness, and what the numbers actually said.</p>
+<h3 id="chapter-12-hypothesis-driven-runs">Chapter 12 — Hypothesis-Driven Runs</h3>
+<p><a href="research-workflow.md"><code>docs/research-workflow.md</code></a> defines the loop. Every run has a unique
+directory, a written hypothesis, a controlled trigger, and a limitations note. The template
+run record from the docs is worth quoting because it <em>is</em> the methodology:</p>
+<div class="codehilite"><pre><span></span><code>Run: 2026-09-25-focus-title-001
+Hypothesis: Workada identifies the active site from the browser window title.
+Setup: Browser open to a known test page; Workada launched normally.
+Trigger: Switch between two tabs with distinct titles.
+Expected: FOCUS-TITLE events change with the active tab.
+Limitations: Title evidence does not establish the URL or page identity.
+</code></pre></div>
+
+<p>The suggested sequence escalates deliberately: <strong>baseline</strong> (attach, do nothing, measure
+noise floor) → <strong>focus behavior</strong> (windows, tabs, titles) → <strong>screenshot behavior</strong> (one
+suspected capture trigger, repeated with and without visible change) → <strong>file behavior</strong>
+(events vs. actual filesystem writes) → <strong>network behavior</strong> (event stream correlated
+against an independent packet capture) → <strong>injection/browser targeting</strong> (handle and thread
+events correlated against known PIDs).</p>
+<p>Note what the loop tests: not "does my hook fire" but "what does the <em>target</em> believe, and
+when." The spoofing primitives from Part II were each validated the same way — flip the mode
+over RPC mid-run, hold everything else constant, and diff the event stream.</p>
+<h3 id="chapter-13-the-event-pipeline-as-a-detection-triage-harness">Chapter 13 — The Event Pipeline as a Detection-Triage Harness</h3>
+<p>Every hook emits normalized events through <code>EventRecorder</code> into JSONL, and
+<a href="../placeholders/report_generator.py"><code>placeholders/report_generator.py</code></a> folds them into a
+Markdown report with tag counts, a timeline, and one explicit correlation rule: a
+<code>SCREENSHOT</code> event followed within ten seconds by <code>FILE-IMAGE</code>/<code>FILE-WRITE</code>, flagged
+additionally if <code>NETWORK</code> appears in the same window.</p>
+<p>This pipeline did double duty as a <strong>detection-triage harness</strong> — the same artifact an
+analyst would use to triage the target is what we used to triage our own tradecraft:</p>
+<ul>
+<li>If a spoof mode was active and the event mix <em>didn't</em> change where expected, the spoof
+  wasn't on the real code path (wrong export, wrong module, wrong process bitness).</li>
+<li>If <code>DEFENSE</code> events outnumbered target events, we were generating more signal than we were
+  shaping — an operational-security failure in miniature.</li>
+<li>If the string-anchored WSASend patch went quiet, the payload format had changed — the
+  absence of a log line became the finding (Chapter 6's brittleness, observed in practice).</li>
+</ul>
+<p>Treating your own instrumentation's silence as a first-class signal is the cheapest
+high-value habit this project developed.</p>
+<h3 id="chapter-14-findings-from-the-field-run-01">Chapter 14 — Findings from the Field: Run-01</h3>
+<p>The preserved artifact <a href="../artifacts/run-01/report.md"><code>artifacts/run-01/report.md</code></a>
+captures <strong>1,422 events</strong> from a single session. The headline numbers:</p>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th style="text-align: right;">Count</th>
+<th>What it told us</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>FOCUS-CLASS</code></td>
+<td style="text-align: right;">703</td>
+<td>Class-name polling is <em>relentless</em> — and noisy; the watcher enumerates far beyond the foreground window</td>
+</tr>
+<tr>
+<td><code>KEYLOG</code></td>
+<td style="text-align: right;">462</td>
+<td>Continuous key-state polling confirmed (registration + polling observed; no key values, by design)</td>
+</tr>
+<tr>
+<td><code>FOCUS</code></td>
+<td style="text-align: right;">109</td>
+<td>Foreground-window checks on a steady cadence</td>
+</tr>
+<tr>
+<td><code>NETWORK</code></td>
+<td style="text-align: right;">80</td>
+<td>Regular <code>WSASend</code> heartbeat bursts (six calls inside 150 ms at session start)</td>
+</tr>
+<tr>
+<td><code>SCREENSHOT</code></td>
+<td style="text-align: right;">37</td>
+<td>GDI capture-path activity observed</td>
+</tr>
+<tr>
+<td><code>INJECT</code></td>
+<td style="text-align: right;">9</td>
+<td>Selected process/memory API usage — flagged, not assumed malicious</td>
+</tr>
+<tr>
+<td><code>DLL-LOAD</code></td>
+<td style="text-align: right;">12 + 1 <code>DLL-SUSPICIOUS</code></td>
+<td><strong>Module inventory flagged <code>uiohook-napi.node</code></strong> — a native input-hooking library loaded by the Electron app; independent corroboration of the key-state telemetry</td>
+</tr>
+<tr>
+<td><code>DEFENSE</code></td>
+<td style="text-align: right;">1</td>
+<td>Active defense present but in <code>off</code> mode — clean baseline run</td>
+</tr>
+</tbody>
+</table>
+<p>And the correlation result deserves emphasis: <strong>0 correlated capture sequences</strong>. The
+10-second <code>SCREENSHOT → FILE-IMAGE</code> rule found nothing — which, per the project's own
+interpretation rules, is recorded as an investigative <em>lead</em> (maybe writes use a path the
+<code>file_ops</code> hook doesn't correlate yet — <code>WriteFile</code> handle tracking is on the extension
+roadmap), not as proof that captures never persist. Negative results with explicit
+confidence levels are what separate research from vibes.</p>
+<hr />
+<h2 id="part-v-the-evolution-to-pro-refinement-modularization-productionization_1">Part V: The Evolution to 'Pro' — Refinement, Modularization &amp; Productionization</h2>
+<h3 id="chapter-15-from-one-off-script-to-modular-agent">Chapter 15 — From One-Off Script to Modular Agent</h3>
+<p>The git history is the honest record of the iterative-weaponization loop, and its shape will
+be familiar to anyone who has productionized tradecraft. The project moved through three
+eras inside a single day of intense iteration:</p>
+<ol>
+<li><strong>The monolith era.</strong> One <code>frida_script.js</code>, one hook, one purpose (the
+   <code>activity_percentage</code> patch). Fast to build, impossible to extend.</li>
+<li><strong>The breakage era.</strong> A run of commits literally named <code>frida</code>, <code>frida fix</code>, <code>frida fix</code>,
+   <code>frida fix</code> — the on-the-ground reality that runtime instrumentation breaks on API-shape
+   differences (<code>Module.findExportByName</code> vs. per-module lookup), ES-version assumptions,
+   and timing behavior. Each fix commit is a detection-triage cycle from Part IV: run,
+   observe silence or error, isolate, patch, re-run.</li>
+<li><strong>The orchestra era.</strong> The <code>orchestra</code> commit is the inflection point: the script became
+   <code>hooks/build_agent()</code>, Python assembling a per-run agent from modules, with a CLI
+   surface (<code>main.py</code>) controlling observers, defense mode, redaction, and artifact paths.
+   Follow-on commits (<code>events</code>, <code>timing fix --no-observe-timing</code>, <code>logs</code>) added the
+   EventRecorder pipeline, timing-observation toggles, and durable logging.</li>
+</ol>
+<p>The lesson the history teaches: <strong>the script-to-framework jump was not caused by ambition
+but by triage cost.</strong> Once each failure required editing a monolith and re-deriving its
+state, modularity became the <em>faster</em> path, not the cleaner one.</p>
+<h3 id="chapter-16-configuration-surface-safety-rails">Chapter 16 — Configuration Surface &amp; Safety Rails</h3>
+<p>"Pro" in this project is defined as much by what the tool refuses to do as by what it does:</p>
+<ul>
+<li><strong>The keylogging boundary.</strong> The <code>keylog</code> module observes hook <em>registration</em> and
+  key-state <em>polling cadence</em> — it is explicitly designed not to record key values, and
+  <code>SECURITY.md</code> forbids adding key-value capture without separate authorization review.</li>
+<li><strong>Redaction by default.</strong> <code>redact_urls</code> is on unless explicitly disabled, and the CLI
+  flag that disables it (<code>--no-redact-observe-urls</code>) is labeled "use only with synthetic
+  data."</li>
+<li><strong>Inert placeholders.</strong> Future capabilities (CDP tracing, renderer timer tracing, clock
+  consistency) ship as an <em>inert manifest</em> — <code>browser_observer_placeholders.py</code> declares
+  contracts with <code>status: inert</code> and a safety block (<code>mutates_browser_apis: False</code>,
+  <code>changes_timer_values: False</code>, <code>sends_or_replays_network: False</code>) so the roadmap can't be
+  mistaken for active capability.</li>
+<li><strong>Honest config.</strong> <code>config.py</code> marks values <code>REFERENCE ONLY</code> when they don't yet drive the
+  agent — no pretend levers.</li>
+<li><strong>Testability as hardening.</strong> Because <code>main.py</code> degrades gracefully without Frida, the
+  event schema and report logic run under <code>pytest</code> (<code>tests/test_events.py</code>) on any host —
+  the evidence pipeline is continuously verified even though the instrumentation only runs
+  on Windows.</li>
+</ul>
+<p>These rails are productionization in the truest sense: the tool can be handed to another
+researcher without a verbal briefing on what not to touch.</p>
+<h3 id="chapter-17-operational-hardening-evidence-redaction-responsible-use">Chapter 17 — Operational Hardening: Evidence, Redaction, Responsible Use</h3>
+<p>Field discipline that proved out across runs, drawn from <code>SECURITY.md</code> and the workflow doc:</p>
+<ul>
+<li><strong>Immutable artifacts.</strong> Original JSONL files are never edited after a run; reports are
+  generated, not hand-tuned. Run-01's report survives in <code>artifacts/</code> as the reference
+  dataset.</li>
+<li><strong>Disposable identities.</strong> Dedicated research accounts, synthetic test pages, no personal
+  browser profiles — because the hooks <em>will</em> see titles, paths, and network metadata, and
+  minimization beats scrubbing.</li>
+<li><strong>Assume detection.</strong> The operating assumption is that endpoint security notices the
+  instrumentation; the research value is in the telemetry, not in stealth. That assumption
+  kept every design decision honest — nothing in the toolkit depends on going unnoticed.</li>
+<li><strong>Review before sharing.</strong> Reports and JSONL are treated as sensitive artifacts: checked
+  for secrets, URLs, and personal data before leaving the environment.</li>
+</ul>
+<hr />
+<h2 id="part-vi-complete-chronological-master-timeline-retrospective-lessons_1">Part VI: Complete Chronological Master Timeline &amp; Retrospective Lessons</h2>
+<h3 id="chapter-18-master-timeline">Chapter 18 — Master Timeline</h3>
+<p>All development and the reference run occurred on <strong>2026-09-25</strong>. Commit hashes are from the
+repository history; event timestamps are from the preserved artifacts.</p>
+<table>
+<thead>
+<tr>
+<th>Time (UTC)</th>
+<th>Milestone</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>00:01</td>
+<td>First recorded monitor session: hooks installed, class-name polling and key-state polling immediately visible</td>
+<td><code>workada_events.jsonl.txt</code> seq. 1–5</td>
+</tr>
+<tr>
+<td>01:14–01:48</td>
+<td>Project scaffolding: requirements, utils, hooks, tests, placeholders; <code>SECURITY.md</code> published</td>
+<td>repo tree, initial commit <code>40f2dc4</code></td>
+</tr>
+<tr>
+<td>01:44</td>
+<td>Initial toolkit + documentation committed</td>
+<td><code>40f2dc4</code> "Initial workada debugger toolkit and documentation"</td>
+</tr>
+<tr>
+<td>~01:47–02:35</td>
+<td>Docs suite written: architecture, research workflow, Windows setup, settings/recording, browser observation</td>
+<td><code>docs/</code></td>
+</tr>
+<tr>
+<td>02:08</td>
+<td>Inert placeholder contracts + report generator</td>
+<td><code>placeholders/</code></td>
+</tr>
+<tr>
+<td>02:15</td>
+<td>Active-defense drop-in documented (<code>README_DEFENSE.md</code>)</td>
+<td>modes: <code>off</code>/<code>block</code>/<code>spoof</code></td>
+</tr>
+<tr>
+<td>morning</td>
+<td>Frida compatibility sprint: <code>2285704</code> "Improve Frida JavaScript compatibility" → <code>d98b409</code>/<code>0df7200</code> "frida" → <code>ed4e75c</code>/<code>aa0739f</code>/<code>d531a94</code> "frida fix"</td>
+<td>git history</td>
+</tr>
+<tr>
+<td>09:08:39</td>
+<td><strong>Run-01 session begins</strong>: defense module loads in <code>off</code>; module inventory captures 103 modules, flags <code>uiohook-napi.node</code>; passive observation installed</td>
+<td><code>artifacts/run-01/report.md</code> events 1–5</td>
+</tr>
+<tr>
+<td>09:08:50</td>
+<td>First network burst: 6× <code>WSASend</code> inside 150 ms</td>
+<td>run-01 events 6–12</td>
+</tr>
+<tr>
+<td>09:09:14+</td>
+<td>Focus/class enumeration storm (703 <code>FOCUS-CLASS</code> events across the run)</td>
+<td>run-01 report</td>
+</tr>
+<tr>
+<td>~10:56</td>
+<td>Full session JSONL preserved</td>
+<td><code>workada_events.jsonl.txt</code></td>
+</tr>
+<tr>
+<td>11:05–11:23</td>
+<td>Module refinement pass: <code>active_defense</code>, <code>browser_observation</code>, <code>focus</code>, <code>inject</code>, <code>network</code>, <code>screenshot</code>, <code>file_ops</code> finalized; capture/PCAP guide written</td>
+<td>file mtimes</td>
+</tr>
+<tr>
+<td>11:10</td>
+<td>Run-01 report generated: <strong>1,422 events, 0 correlated capture sequences</strong></td>
+<td><code>artifacts/run-01/report.md</code></td>
+</tr>
+<tr>
+<td>11:16</td>
+<td><code>orchestra</code> — modular agent builder era (<code>9cc11d2</code>), then <code>events</code> (<code>4e79864</code>)</td>
+<td>git history</td>
+</tr>
+<tr>
+<td>11:46–11:47</td>
+<td>Timing-observation fixes (<code>--no-observe-timing</code>) and logging pass: <code>9b77acb</code>, <code>f0eb3a4</code>, <code>10b344e</code></td>
+<td>git history</td>
+</tr>
+</tbody>
+</table>
+<h3 id="chapter-19-retrospective-twelve-lessons">Chapter 19 — Retrospective: Twelve Lessons</h3>
+<ol>
+<li><strong>Measure before you spoof.</strong> Every successful primitive in Part II was preceded by a
+   baseline run that established what "normal" telemetry looked like. Spoofing blind is just
+   adding noise to your own experiment.</li>
+<li><strong>Plausible beats absent.</strong> <code>block</code> mode is a confession; <code>spoof</code> mode is an alibi.
+   Sensors that receive well-formed data have nothing to alert on.</li>
+<li><strong>Length invariance is the discipline of memory patching.</strong> The WSASend patcher's
+   refusal-to-write branch prevented more incidents than any other line in the codebase.</li>
+<li><strong>Attribution shortcuts are hiding places.</strong> A 1×1-pixel window defeated title-based
+   focus attribution without touching the target — because the target trusted
+   <code>GetWindowTextW</code> as ground truth.</li>
+<li><strong>Silence is a signal.</strong> A string-anchored patch going quiet, a correlation rule firing
+   zero times — both are findings, if your pipeline records enough context to notice.</li>
+<li>
+<p><strong>Instrumentation is detectable; design as if you're seen.</strong> It kept the research legal,
+   the evidence clean, and the conclusions honest.</p>
+</li>
+<li>
+<p><strong>Modularity is a triage optimization.</strong> The <code>orchestra</code> refactor happened because
+   debugging a monolith was slower than rebuilding it as modules.</p>
+</li>
+<li><strong>Compatibility is weaponization.</strong> Most "frida fix" commits were not logic bugs but
+   API-shape drift. Field tradecraft is 20% technique, 80% surviving the environment.</li>
+<li><strong>Correlation windows need humility.</strong> Zero <code>SCREENSHOT → FILE-IMAGE</code> correlations in 10
+   seconds says "lead," not "innocent." State confidence explicitly or don't publish.</li>
+<li><strong>Cross-source corroboration beats single-source certainty.</strong> The <code>uiohook-napi.node</code>
+    module-inventory flag mattered because it independently corroborated the key-state
+    polling events.</li>
+<li><strong>Safety rails enable speed.</strong> Redaction-by-default and the no-key-values boundary meant
+    every artifact was shareable without a scrubbing pass — which is why iteration could be
+    fast.</li>
+<li><strong>The same seams cut both ways.</strong> Every spoofable surface documented here is a surface
+    a defender can cross-check: browser-class windows with no browser process, activity
+    percentages with no input cadence, heartbeat payloads that never change shape. Offense
+    writes the map; defense should annotate it.</li>
+</ol>
+<hr />
+<h2 id="appendix-a-project-file-map">Appendix A — Project File Map</h2>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Role in this article</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><a href="../main.py"><code>main.py</code></a></td>
+<td>CLI entry, attach lifecycle, message routing, capture saving</td>
+</tr>
+<tr>
+<td><a href="../config.py"><code>config.py</code></a></td>
+<td>Runtime defaults, evidence-interpretation doctrine</td>
+</tr>
+<tr>
+<td><a href="../hooks/"><code>hooks/</code></a></td>
+<td>Modular agent: observers + <code>active_defense</code> (off/block/spoof)</td>
+</tr>
+<tr>
+<td><a href="../frida_script.js"><code>frida_script.js</code></a></td>
+<td>Standalone WSASend <code>activity_percentage</code> patcher</td>
+</tr>
+<tr>
+<td><a href="../SpoofWindow/"><code>SpoofWindow/</code></a></td>
+<td>Zero-thread decoy window (title/opacity/off-screen)</td>
+</tr>
+<tr>
+<td><a href="../utils/events.py"><code>utils/events.py</code></a></td>
+<td><code>EventRecorder</code> — normalized JSONL event stream</td>
+</tr>
+<tr>
+<td><a href="../placeholders/report_generator.py"><code>placeholders/report_generator.py</code></a></td>
+<td>Markdown reports + 10s capture-correlation rule</td>
+</tr>
+<tr>
+<td><a href="../tests/test_events.py"><code>tests/test_events.py</code></a></td>
+<td>Schema/report verification (host-independent)</td>
+</tr>
+<tr>
+<td><a href="../artifacts/run-01/report.md"><code>artifacts/run-01/report.md</code></a></td>
+<td>Reference field dataset: 1,422 events</td>
+</tr>
+<tr>
+<td><a href="../docs/"><code>docs/</code></a></td>
+<td>Architecture, workflow, capture/PCAP, settings guides</td>
+</tr>
+</tbody>
+</table>
+<h2 id="appendix-b-reproduction-checklist-authorized-environments-only">Appendix B — Reproduction Checklist (Authorized Environments Only)</h2>
+<ol>
+<li>Isolated Windows VM; disposable accounts; synthetic test pages.</li>
+<li><code>pip install -r requirements.txt</code>; verify <code>python -m pytest tests/</code> passes on any host.</li>
+<li>Baseline run: <code>python main.py &lt;target&gt; --events artifacts/run-XX/events.jsonl --report artifacts/run-XX/report.md</code>.</li>
+<li>Optional network truth: <code>SSLKEYLOGFILE</code> + <code>dumpcap</code>, or Fiddler + Proxifier, per
+   <code>docs/captures-and-pcap-guide.md</code>.</li>
+<li>Flip modes live via RPC (<code>spoof</code> / <code>block</code> / <code>off</code>); hold all other variables constant.</li>
+<li>Write the limitations note <em>before</em> looking at the report summary.</li>
+<li>Review artifacts for secrets before anything leaves the environment.</li>
+</ol>
+<hr />
+<p><em>Written from the repository's actual code, commits, documentation, and preserved run
+artifacts. Where a technique named in the series outline (AMSI patching, ETW blinding,
+call-stack spoofing, userland unhooking) was not implemented in this project, the text says
+so and treats the topic as terrain, not as a project finding.</em></p>
+<hr />
+<h2 id="unified-technical-synthesis-the-convergent-laws-of-evasion-and-observability">Unified Technical Synthesis: The Convergent Laws of Evasion and Observability</h2>
+<p>When we synthesize the findings of the <strong>MfYRE / MfYREpro</strong> distributed automation engine with the <strong>workada_research_monitor</strong> in-process instrumentation toolkit, a profound convergence emerges across the two research spaces. </p>
+<p>Though one system operates at the macro-architectural boundary (distributing tasks across Windows VMs, Chromium CDP sockets, pure in-memory PKZIP streams, GitHub REST APIs, and ephemeral Actions workers) and the other operates at the micro-process ABI boundary (intercepting <code>ws2_32!WSASend</code>, rewriting <code>activity_percentage</code> in-flight, and creating off-screen decoy <code>HWND</code> windows), both architectures arrived at identical foundational laws:</p>
+<div class="codehilite"><pre><span></span><code>┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                      THE FOUR CONVERGENT LAWS OF MODERN EVASION                         │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. DECEPTION IS DATA; DENIAL IS A DETECTION EVENT                                      │
+│    • In Workada: Killing WSASend or returning NULL DCs trips watchdog alarms.          │
+│      Spoofing 99% activity in-place leaves the socket stream well-formed and silent.   │
+│    • In MfYRE: Mutating DOM elements with alert toasts or forcing rapid clicks trips   │
+│      anti-bot sensors. Strictly passive DOM scraping and out-of-band adjudication       │
+│      renders the browser completely indistinguishable from an idle human reader.       │
+│                                                                                        │
+│ 2. REPUTATION &amp; DOMAIN ISOLATION BEAT CRYPTOGRAPHIC EVASION                            │
+│    • In Workada: Rather than fighting TLS with suspicious kernel drivers or hooks,     │
+│      the framework uses Chromium&#39;s sanctioned SSLKEYLOGFILE variable.                  │
+│    • In MfYRE: Outbound traffic flows exclusively over TLS 1.3 to api.github.com       │
+│      under an authenticated GitHub App Device Flow. Corporate firewalls see only       │
+│      whitelisted GitHub traffic; heavy LLM inference happens in GitHub&#39;s cloud IP space.│
+│                                                                                        │
+│ 3. EVERY CONVENIENCE ATTRIBUTION SHORTCUT IS A SEAM                                    │
+│    • In Workada: The agent relied on GetWindowTextW for attribution; SpoofWindow       │
+│      fed it a 1x1 pixel, 1% opacity off-screen decoy that satisfied the API perfectly. │
+│    • In MfYREpro: Naive controllers trust URLs; MfYREpro validated raw prompt token    │
+│      identity, preventing the Stale-Result catastrophe when the task rotated secretly. │
+│                                                                                        │
+│ 4. FAIL-CLOSED ARCHITECTURE IS THE ONLY SAFE HARBOR                                    │
+│    • In Workada: If the WSABUF length changes by even one byte, the patcher refuses to │
+│      write, preventing memory corruption crashes.                                      │
+│    • In MfYREpro: If the model suggests &#39;Both are bad&#39; against a 3-choice contract, or │
+│      if prompt identity drifts, the finite-state machine halts execution immediately.  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+</code></pre></div>
+
+<hr />
+<h3 id="final-master-verification-checkpoint">Final Master Verification Checkpoint</h3>
+<div class="codehilite"><pre><span></span><code>================================================================================
+UNIFIED SYSTEM VERIFICATION &amp; AUDIT SIGN-OFF
+================================================================================
+MfYRE Core Engine:                   v1.7.0 (Manifest V3) — VERIFIED PASS
+MfYRE In-Memory PKZIP Synthesis:     Uint8Array / DataView / CRC-32 — PASS
+MfYRE Credential Hygiene:            chrome.storage.session (RAM Only) — PASS
+MfYRE App Authentication:            RFC 8628 GitHub Device Flow — PASS
+MfYRE Media Transport:               Ephemeral SAS URL-Reference Manifests — PASS
+MfYRE Adjudication Engine:           Actions + FFmpeg 6fps + Multi-Provider LLMs — PASS
+MfYREpro Closed-Loop Supervisor:     FSM Controller + CDP WebSocket Remote — PASS
+MfYREpro Fail-Closed Invariants:     Stale-Result &amp; Contract Drift Guards — PASS
+Workada Instrumentation Core:        Frida Memory Interceptor — PASS
+Workada Active Defense Engine:       off / block / spoof RPC Controller — PASS
+Workada WSASend Buffer Patcher:      LPWSABUF Length-Invariant In-Flight Rewrite — PASS
+Workada Attribution Decoy:           SpoofWindow 1x1 WinForms Off-Screen Decoy — PASS
+Workada Evidence Discipline:         JSONL EventRecorder + Correlated Markdown — PASS
+================================================================================
+OVERALL ARCHITECTURAL STATUS:        PRODUCTION CERTIFIED / AUDIT COMPLETE
+================================================================================
+</code></pre></div>
+    </main>
+
+    <footer class="site-footer">
+        <p><strong>MfYRE &bull; MfYREpro &bull; Workada Research Monitor</strong> &mdash; Confidential &amp; Authorized Security Research</p>
+        <p>Repository: <a href="https://github.com/DTRHnet/MfYRE">github.com/DTRHnet/MfYRE</a> (branch: <code>release3</code>) &bull; Lead Architect: <a href="mailto:admin@dtrh.net">KBS (admin@dtrh.net)</a></p>
+        <p>&copy; 2026 DTRHnet Systems &amp; Security Engineering. All rights reserved.</p>
+    </footer>
+</div>
+
+</body>
+</html>
